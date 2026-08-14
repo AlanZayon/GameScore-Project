@@ -1,0 +1,103 @@
+name: gamescore
+
+# Day to day development runs only the two stateful services here and keeps the
+# API and web app on the host, which is faster to iterate on and lighter on RAM:
+#
+#   docker compose up -d          # postgres + redis
+#   pnpm db:migrate && pnpm db:seed && pnpm dev
+#
+# The full stack, including the built API and web images, is available with:
+#
+#   docker compose --profile apps up --build
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: gamescore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gamescore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gamescore}
+      POSTGRES_DB: ${POSTGRES_DB:-gamescore}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      # Postgres 18 images keep data in a major-version subdirectory, so the
+      # mount belongs one level up from the classic /var/lib/postgresql/data.
+      - postgres-data-v18:/var/lib/postgresql
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-gamescore} -d ${POSTGRES_DB:-gamescore}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:8-alpine
+    container_name: gamescore-redis
+    restart: unless-stopped
+    # Rate limit counters and cached rankings are all disposable, so there is no
+    # reason to pay for persistence.
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    profiles: ['apps']
+    container_name: gamescore-api
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gamescore}:${POSTGRES_PASSWORD:-gamescore}@postgres:5432/${POSTGRES_DB:-gamescore}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required, copy .env.example to .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required, copy .env.example to .env}
+      JWT_ACCESS_TOKEN_TTL: ${JWT_ACCESS_TOKEN_TTL:-900}
+      JWT_REFRESH_TOKEN_TTL: ${JWT_REFRESH_TOKEN_TTL:-2592000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RANKING_MINIMUM_REVIEWS: ${RANKING_MINIMUM_REVIEWS:-50}
+      SCORE_LABEL_MINIMUM_REVIEWS: ${SCORE_LABEL_MINIMUM_REVIEWS:-10}
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID:-}
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET:-}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    ports:
+      - '${API_PORT:-3001}:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    profiles: ['apps']
+    container_name: gamescore-web
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+      args:
+        # Public values are inlined into the client bundle at build time.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Server-side rendering talks to the API over the compose network.
+      API_INTERNAL_URL: http://api:3001
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      - api
+
+volumes:
+  postgres-data-v18:

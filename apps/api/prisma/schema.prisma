@@ -1,0 +1,603 @@
+// GameScore database schema.
+//
+// Design principles:
+//  * Reviews are the single source of truth. Everything in GameStatistics,
+//    GameActivityDaily and GameScoreSnapshot is derived and rebuildable.
+//  * Integrity is enforced by the database (foreign keys, unique constraints,
+//    checks) and not only by application code.
+//  * Reviews are soft deleted so moderation decisions remain auditable.
+//
+// See docs/database.md for the reasoning behind each table.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+}
+
+/// Anti-spam classification. Independent from ReviewStatus: a review can be
+/// visible while still being flagged for a moderator to look at.
+enum ReviewModerationStatus {
+  NORMAL
+  SUSPICIOUS
+  REVIEW_BOMB
+  MODERATION_REQUIRED
+}
+
+enum ReportReason {
+  SPAM
+  ABUSE
+  OFF_TOPIC
+  FAKE_REVIEW
+  HARASSMENT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum ReviewBombStatus {
+  DETECTED
+  CONFIRMED
+  DISMISSED
+}
+
+enum ReviewBombDirection {
+  NEGATIVE
+  POSITIVE
+}
+
+enum ExternalProvider {
+  IGDB
+}
+
+enum PlatformFamily {
+  PC
+  PLAYSTATION
+  XBOX
+  NINTENDO
+  MOBILE
+  OTHER
+}
+
+enum ReputationReason {
+  USEFUL_VOTE_RECEIVED
+  NOT_USEFUL_VOTE_RECEIVED
+  USEFUL_VOTE_REMOVED
+  NOT_USEFUL_VOTE_REMOVED
+  REVIEW_PUBLISHED
+  REVIEW_DELETED
+  REVIEW_REMOVED_BY_MODERATOR
+  ABUSE_CONFIRMED
+}
+
+enum AuditAction {
+  ADMIN_DELETED_REVIEW
+  ADMIN_RESTORED_REVIEW
+  ADMIN_UPDATED_REVIEW_MODERATION
+  ADMIN_SUSPENDED_USER
+  ADMIN_REINSTATED_USER
+  ADMIN_UPDATED_USER_ROLE
+  ADMIN_IMPORTED_GAME
+  ADMIN_SYNCED_GAME
+  ADMIN_UPDATED_GAME
+  ADMIN_RESOLVED_REPORT
+  ADMIN_UPDATED_REVIEW_BOMB_EVENT
+  ADMIN_RECALCULATED_GAME_SCORE
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Always stored lowercase, which is what makes the unique index
+  /// case-insensitive without needing the citext extension.
+  email    String @unique @db.VarChar(255)
+  /// Lowercase handle used in URLs (/profile/:username).
+  username String @unique @db.VarChar(30)
+  /// Optional prettier form of the handle, purely for display.
+  displayName String? @db.VarChar(50)
+
+  passwordHash String @db.VarChar(255)
+
+  role   UserRole   @default(USER)
+  status UserStatus @default(ACTIVE)
+
+  suspendedUntil   DateTime?
+  suspensionReason String?   @db.VarChar(500)
+
+  reputationScore Int @default(0)
+
+  avatarUrl String? @db.VarChar(1000)
+  bio       String? @db.VarChar(500)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  reviews              Review[]
+  votes                ReviewVote[]
+  refreshTokens        RefreshToken[]
+  reputationEvents     ReputationEvent[]
+  reportsFiled         ReviewReport[]      @relation("ReportReporter")
+  reportsResolved      ReviewReport[]      @relation("ReportResolver")
+  reviewsDeleted       Review[]            @relation("ReviewDeletedBy")
+  reviewBombsReviewed  ReviewBombEvent[]
+  auditLogs            AuditLog[]
+
+  @@index([reputationScore(sort: Desc)])
+  @@index([createdAt])
+  @@map("users")
+}
+
+/// Refresh tokens are stored hashed, so a database leak cannot be replayed as
+/// a session. Rotation is implemented by revoking the old row on every refresh.
+model RefreshToken {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+
+  tokenHash String    @unique @db.VarChar(128)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  /// Truncated user agent, useful when a user asks "where am I signed in".
+  userAgent String? @db.VarChar(255)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue
+// ---------------------------------------------------------------------------
+
+model Platform {
+  id           String         @id @default(uuid()) @db.Uuid
+  slug         String         @unique @db.VarChar(60)
+  name         String         @db.VarChar(80)
+  abbreviation String         @db.VarChar(20)
+  family       PlatformFamily @default(OTHER)
+  sortOrder    Int            @default(0)
+  createdAt    DateTime       @default(now())
+
+  games      GamePlatform[]
+  reviews    Review[]
+  statistics GameStatisticsPlatform[]
+
+  @@index([family])
+  @@map("platforms")
+}
+
+model Genre {
+  id        String   @id @default(uuid()) @db.Uuid
+  slug      String   @unique @db.VarChar(60)
+  name      String   @db.VarChar(80)
+  createdAt DateTime @default(now())
+
+  games GameGenre[]
+
+  @@map("genres")
+}
+
+model Game {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Public identity of the game. URLs are always /games/:slug, never an id.
+  slug String @unique @db.VarChar(80)
+  name String @db.VarChar(255)
+
+  summary     String? @db.VarChar(600)
+  description String? @db.Text
+
+  developer String? @db.VarChar(150)
+  publisher String? @db.VarChar(150)
+
+  releaseDate DateTime? @db.Date
+
+  coverImageUrl  String? @db.VarChar(1000)
+  bannerImageUrl String? @db.VarChar(1000)
+
+  viewCount Int @default(0)
+
+  /// Names of fields edited by a human. GameSyncService never overwrites these
+  /// with provider data, which keeps editorial changes from being clobbered.
+  editedFields String[] @default([])
+
+  /// Full text search document, maintained by PostgreSQL as a generated column
+  /// (see the migration). Declaring the column, its database-side expression
+  /// and its GIN index here is what keeps `prisma migrate dev` from reporting
+  /// drift and trying to recreate them on every run.
+  searchVector Unsupported("tsvector")? @default(dbgenerated())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platforms         GamePlatform[]
+  genres            GameGenre[]
+  reviews           Review[]
+  statistics        GameStatistics?
+  platformStats     GameStatisticsPlatform[]
+  activity          GameActivityDaily[]
+  snapshots         GameScoreSnapshot[]
+  externalSources   GameExternalSource[]
+  reviewBombEvents  ReviewBombEvent[]
+
+  @@index([name])
+  @@index([releaseDate(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([searchVector], type: Gin)
+  @@map("games")
+}
+
+model GamePlatform {
+  gameId     String @db.Uuid
+  platformId String @db.Uuid
+
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, platformId])
+  @@index([platformId])
+  @@map("game_platforms")
+}
+
+model GameGenre {
+  gameId  String @db.Uuid
+  genreId String @db.Uuid
+
+  game  Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, genreId])
+  @@index([genreId])
+  @@map("game_genres")
+}
+
+/// Link between a local game and its record at an external metadata provider.
+/// The unique constraint on (provider, externalId) is what makes imports
+/// idempotent: importing the same IGDB id twice can never create a duplicate.
+model GameExternalSource {
+  id     String @id @default(uuid()) @db.Uuid
+  gameId String @db.Uuid
+
+  provider   ExternalProvider
+  externalId String           @db.VarChar(100)
+
+  /// Provider-side modification timestamp, used to skip pointless updates.
+  externalUpdatedAt DateTime?
+  lastSyncedAt      DateTime?
+  /// Raw provider response, kept for debugging and re-mapping without refetching.
+  rawPayload        Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@unique([gameId, provider])
+  @@index([gameId])
+  @@map("game_external_sources")
+}
+
+// ---------------------------------------------------------------------------
+// Reviews
+// ---------------------------------------------------------------------------
+
+model Review {
+  id     String @id @default(uuid()) @db.Uuid
+  gameId String @db.Uuid
+  userId String @db.Uuid
+
+  /// The primary signal: would you recommend this game?
+  recommended Boolean
+  /// Optional 0-10 score. Complements the recommendation, never replaces it.
+  rating      Int?
+  text        String  @db.Text
+
+  hoursPlayed Int?
+  platformId  String? @db.Uuid
+
+  usefulCount    Int @default(0)
+  notUsefulCount Int @default(0)
+
+  /// Cached ReviewRankingService output, used to order the review list.
+  rankingScore Float @default(0)
+
+  status           ReviewStatus           @default(PUBLISHED)
+  moderationStatus ReviewModerationStatus @default(NORMAL)
+  moderationNotes  String?                @db.VarChar(1000)
+
+  /// Hash of the normalised body, used to spot copy-pasted reviews.
+  textFingerprint String? @db.VarChar(64)
+  /// Hashed client IP, used only to spot multi-account abuse. Never logged or
+  /// exposed, and never the raw address.
+  authorIpHash    String? @db.VarChar(64)
+
+  edited Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Soft deletion keeps an audit trail of moderation decisions.
+  deletedAt      DateTime?
+  deletedById    String?   @db.Uuid
+  deletionReason String?   @db.VarChar(500)
+
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform  Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  deletedBy User?     @relation("ReviewDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  votes   ReviewVote[]
+  reports ReviewReport[]
+
+  // One active review per user per game is additionally enforced by a partial
+  // unique index (see the migration), which a Prisma @@unique cannot express
+  // because soft-deleted rows must not block a new review.
+  @@index([gameId, createdAt(sort: Desc)])
+  @@index([gameId, rankingScore(sort: Desc)])
+  @@index([gameId, recommended])
+  @@index([gameId, platformId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([status, moderationStatus])
+  @@index([textFingerprint])
+  @@map("reviews")
+}
+
+model ReviewVote {
+  id       String @id @default(uuid()) @db.Uuid
+  reviewId String @db.Uuid
+  userId   String @db.Uuid
+
+  /// true = "this review was useful", false = "it was not".
+  useful Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// One vote per user per review, enforced by the database.
+  @@unique([userId, reviewId])
+  @@index([reviewId])
+  @@index([userId])
+  @@map("review_votes")
+}
+
+model ReviewReport {
+  id         String @id @default(uuid()) @db.Uuid
+  reviewId   String @db.Uuid
+  reporterId String @db.Uuid
+
+  reason  ReportReason
+  details String?      @db.VarChar(1000)
+
+  status ReportStatus @default(PENDING)
+
+  createdAt      DateTime  @default(now())
+  resolvedAt     DateTime?
+  resolvedById   String?   @db.Uuid
+  resolutionNote String?   @db.VarChar(500)
+
+  review     Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter   User   @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolvedBy User?  @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  /// A user may report a given review only once.
+  @@unique([reviewId, reporterId])
+  @@index([status, createdAt])
+  @@index([reviewId])
+  @@map("review_reports")
+}
+
+// ---------------------------------------------------------------------------
+// Derived statistics (always rebuildable from reviews)
+// ---------------------------------------------------------------------------
+
+model GameStatistics {
+  gameId String @id @db.Uuid
+
+  totalReviews    Int @default(0)
+  positiveReviews Int @default(0)
+  negativeReviews Int @default(0)
+
+  /// What users see.
+  positivePercentage Float @default(0)
+  /// Raw Wilson lower bound (0..1), kept for transparency.
+  wilsonLowerBound   Float @default(0)
+  /// Ranking key (0..100). Not displayed to users.
+  confidenceScore    Float @default(0)
+
+  averageRating Float?
+  ratingCount   Int    @default(0)
+
+  /// Same figures with confirmed review bomb windows excluded.
+  totalReviewsExcludingBombs    Int   @default(0)
+  positiveReviewsExcludingBombs Int   @default(0)
+  negativeReviewsExcludingBombs Int   @default(0)
+  positivePercentageExcludingBombs Float @default(0)
+  confidenceScoreExcludingBombs    Float @default(0)
+
+  totalHoursPlayed Int @default(0)
+
+  lastCalculatedAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([confidenceScore(sort: Desc)])
+  @@index([totalReviews(sort: Desc)])
+  @@index([positivePercentage(sort: Desc)])
+  @@map("game_statistics")
+}
+
+model GameStatisticsPlatform {
+  gameId     String @db.Uuid
+  platformId String @db.Uuid
+
+  totalReviews    Int @default(0)
+  positiveReviews Int @default(0)
+  negativeReviews Int @default(0)
+
+  positivePercentage Float @default(0)
+  confidenceScore    Float @default(0)
+
+  lastCalculatedAt DateTime @default(now())
+
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, platformId])
+  @@index([platformId])
+  @@map("game_statistics_platforms")
+}
+
+/// Daily rollup that powers trending, the activity timeline and review bomb
+/// detection without ever scanning the reviews table.
+model GameActivityDaily {
+  gameId String   @db.Uuid
+  date   DateTime @db.Date
+
+  reviewCount   Int @default(0)
+  positiveCount Int @default(0)
+  negativeCount Int @default(0)
+  viewCount     Int @default(0)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, date])
+  @@index([date])
+  @@map("game_activity_daily")
+}
+
+/// One row per game per day, so the evolution of a score can be charted later.
+model GameScoreSnapshot {
+  id     String   @id @default(uuid()) @db.Uuid
+  gameId String   @db.Uuid
+  date   DateTime @db.Date
+
+  totalReviews    Int
+  positiveReviews Int
+  negativeReviews Int
+
+  positivePercentage Float
+  confidenceScore    Float
+
+  createdAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, date])
+  @@index([date])
+  @@map("game_score_snapshots")
+}
+
+/// A detected period of abnormal, one-sided review activity. Detection never
+/// deletes reviews; it records the window for a moderator to judge.
+model ReviewBombEvent {
+  id     String @id @default(uuid()) @db.Uuid
+  gameId String @db.Uuid
+
+  startAt DateTime
+  endAt   DateTime
+
+  positiveCount Int
+  negativeCount Int
+
+  /// The game's own normal daily volume at detection time.
+  baselinePerDay Float
+  /// 0..1, used to prioritise the moderation queue.
+  severity       Float
+
+  direction ReviewBombDirection @default(NEGATIVE)
+  status    ReviewBombStatus    @default(DETECTED)
+
+  detectedAt DateTime  @default(now())
+  reviewedAt DateTime?
+  reviewedById String? @db.Uuid
+  notes        String? @db.VarChar(1000)
+
+  game       Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([gameId, startAt])
+  @@index([gameId, status])
+  @@index([status, severity(sort: Desc)])
+  @@map("review_bomb_events")
+}
+
+/// Append-only log of reputation changes, so a user's score can always be
+/// explained and recomputed rather than being a mysterious integer.
+model ReputationEvent {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+
+  delta        Int
+  reason       ReputationReason
+  balanceAfter Int
+
+  sourceType String? @db.VarChar(40)
+  sourceId   String? @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("reputation_events")
+}
+
+/// Record of privileged actions, for accountability.
+model AuditLog {
+  id      String  @id @default(uuid()) @db.Uuid
+  actorId String? @db.Uuid
+
+  action     AuditAction
+  targetType String      @db.VarChar(40)
+  targetId   String      @db.VarChar(80)
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([action])
+  @@map("audit_logs")
+}

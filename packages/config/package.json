@@ -1,0 +1,30 @@
+{
+  "name": "@gamescore/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared TypeScript, ESLint and Prettier configuration for the GameScore workspace",
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./eslint/base": "./eslint/base.mjs",
+    "./eslint/node": "./eslint/node.mjs",
+    "./eslint/next": "./eslint/next.mjs"
+  },
+  "scripts": {
+    "lint": "echo \"@gamescore/config has no lintable sources\"",
+    "typecheck": "echo \"@gamescore/config has no typecheckable sources\""
+  },
+  "dependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.11.0",
+    "typescript-eslint": "8.67.0"
+  },
+  "peerDependencies": {
+    "eslint": "^10.0.0",
+    "typescript": "^5.9.0"
+  }
+}

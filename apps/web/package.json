@@ -1,0 +1,43 @@
+{
+  "name": "@gamescore/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GameScore web application (Next.js App Router)",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"@gamescore/web is covered by typecheck, lint and the API test suites\""
+  },
+  "dependencies": {
+    "@gamescore/shared": "workspace:*",
+    "@gamescore/types": "workspace:*",
+    "@hookform/resolvers": "5.7.1",
+    "@tanstack/react-query": "5.101.4",
+    "clsx": "2.1.1",
+    "date-fns": "4.4.0",
+    "lucide-react": "1.31.0",
+    "next": "16.3.0",
+    "next-intl": "4.13.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "7.85.0",
+    "tailwind-merge": "3.6.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@gamescore/config": "workspace:*",
+    "@next/eslint-plugin-next": "16.3.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "26.2.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "eslint": "10.8.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
+}

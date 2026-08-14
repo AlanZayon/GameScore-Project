@@ -1,0 +1,23 @@
+{
+  "name": "@gamescore/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Framework agnostic GameScore domain logic: statistical scoring, score labels and shared enums",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "@gamescore/config": "workspace:*",
+    "eslint": "10.8.1",
+    "typescript": "5.9.3"
+  }
+}

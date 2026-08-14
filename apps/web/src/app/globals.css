@@ -1,0 +1,134 @@
+@import 'tailwindcss';
+
+/*
+ * GameScore visual identity.
+ *
+ * Dark is the default theme (players browse at night), but every colour is a
+ * semantic token defined twice, so switching to light is a class on <html>
+ * rather than a rewrite of every component.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --gs-canvas: #f6f7f9;
+  --gs-surface: #ffffff;
+  --gs-surface-raised: #ffffff;
+  --gs-surface-hover: #eef0f4;
+  --gs-border: #dcdfe6;
+  --gs-border-strong: #c3c8d4;
+  --gs-text: #10131a;
+  --gs-text-muted: #5a6272;
+  --gs-text-subtle: #838b9c;
+  --gs-brand: #5b3df5;
+  --gs-brand-hover: #4c31d8;
+  --gs-brand-contrast: #ffffff;
+  --gs-brand-soft: #ece7ff;
+  --gs-positive: #0f9d58;
+  --gs-positive-soft: #e2f5ea;
+  --gs-mixed: #b7791f;
+  --gs-mixed-soft: #fdf3dc;
+  --gs-negative: #d13438;
+  --gs-negative-soft: #fdeaea;
+  --gs-overlay: rgb(16 19 26 / 45%);
+}
+
+.dark {
+  --gs-canvas: #0b0e14;
+  --gs-surface: #141922;
+  --gs-surface-raised: #1b2230;
+  --gs-surface-hover: #222b3b;
+  --gs-border: #26303f;
+  --gs-border-strong: #364356;
+  --gs-text: #eef1f6;
+  --gs-text-muted: #9aa5b8;
+  --gs-text-subtle: #6d7893;
+  --gs-brand: #8b6dff;
+  --gs-brand-hover: #a08bff;
+  --gs-brand-contrast: #0b0e14;
+  --gs-brand-soft: #221a45;
+  --gs-positive: #3ddc84;
+  --gs-positive-soft: #10291c;
+  --gs-mixed: #f5c451;
+  --gs-mixed-soft: #2b2312;
+  --gs-negative: #ff5f56;
+  --gs-negative-soft: #2d1414;
+  --gs-overlay: rgb(0 0 0 / 65%);
+}
+
+@theme inline {
+  --color-canvas: var(--gs-canvas);
+  --color-surface: var(--gs-surface);
+  --color-surface-raised: var(--gs-surface-raised);
+  --color-surface-hover: var(--gs-surface-hover);
+  --color-border-subtle: var(--gs-border);
+  --color-border-strong: var(--gs-border-strong);
+  --color-content: var(--gs-text);
+  --color-content-muted: var(--gs-text-muted);
+  --color-content-subtle: var(--gs-text-subtle);
+  --color-brand: var(--gs-brand);
+  --color-brand-hover: var(--gs-brand-hover);
+  --color-brand-contrast: var(--gs-brand-contrast);
+  --color-brand-soft: var(--gs-brand-soft);
+  --color-positive: var(--gs-positive);
+  --color-positive-soft: var(--gs-positive-soft);
+  --color-mixed: var(--gs-mixed);
+  --color-mixed-soft: var(--gs-mixed-soft);
+  --color-negative: var(--gs-negative);
+  --color-negative-soft: var(--gs-negative-soft);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', monospace;
+
+  --radius-card: 0.875rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--gs-border);
+  }
+
+  html {
+    color-scheme: light;
+    scrollbar-gutter: stable;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--gs-canvas);
+    color: var(--gs-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--gs-brand);
+    outline-offset: 2px;
+  }
+
+  /* Respect users who ask for less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  max-width: 80rem;
+
+  @media (width >= 48rem) {
+    padding-inline: 1.5rem;
+  }
+}

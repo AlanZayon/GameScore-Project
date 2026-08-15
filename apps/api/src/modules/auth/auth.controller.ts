@@ -31,7 +31,7 @@ import { REFRESH_TOKEN_COOKIE } from './domain/auth-user';
 import type { AuthUser } from './domain/auth-user';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto, ResendVerificationDto, VerifyEmailDto } from './dto/password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -149,6 +149,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Set a new password using a reset token' })
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
     await this.auth.resetPassword(dto.token, dto.password);
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 10, ttl: 60 * 1000, blockDuration: 5 * 60 * 1000 } })
+  @ApiOperation({ summary: 'Confirm the account email with a verification token' })
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<void> {
+    await this.auth.verifyEmail(dto.token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000, blockDuration: 5 * 60 * 1000 } })
+  @ApiOperation({ summary: 'Resend the verification email. Always succeeds.' })
+  async resendVerification(@Body() dto: ResendVerificationDto): Promise<void> {
+    await this.auth.resendVerification(dto.email);
   }
 
   private completeSession(response: Response, result: AuthResult): AuthSessionResponse {

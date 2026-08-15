@@ -22,15 +22,26 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!acceptedTerms) {
+      setError(t('termsRequired'));
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
-      await register({ email, username, password, displayName: displayName.trim() || undefined });
+      await register({
+        email,
+        username,
+        password,
+        displayName: displayName.trim() || undefined,
+        acceptedTerms: true,
+      });
       router.push(next);
     } catch (caught) {
       setError(errors(caught instanceof ApiError ? caught.code : 'INTERNAL_ERROR'));
@@ -85,6 +96,26 @@ export default function RegisterPage() {
           />
           <p className="mt-1 text-xs text-content-subtle">{t('passwordHint')}</p>
         </div>
+        <label className="flex items-start gap-2 text-sm text-content-muted">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={acceptedTerms}
+            onChange={(event) => setAcceptedTerms(event.target.checked)}
+            required
+          />
+          <span>
+            {t('acceptTermsPrefix')}{' '}
+            <Link href="/terms" className="text-brand hover:underline">
+              {t('terms')}
+            </Link>{' '}
+            {t('acceptTermsAnd')}{' '}
+            <Link href="/privacy" className="text-brand hover:underline">
+              {t('privacy')}
+            </Link>
+            .
+          </span>
+        </label>
         {error ? <p className="text-sm text-negative">{error}</p> : null}
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? t('submitting') : t('registerSubmit')}

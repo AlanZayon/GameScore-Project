@@ -15,6 +15,7 @@ export function toUserSummary(user: PublicUser): UserSummary {
     avatarUrl: user.avatarUrl,
     reputationScore: user.reputationScore,
     role: user.role,
+    deleted: user.deletedAt !== null,
   };
 }
 
@@ -26,9 +27,11 @@ export function toAuthenticatedUser(user: AccountUser): AuthenticatedUser {
     avatarUrl: user.avatarUrl,
     reputationScore: user.reputationScore,
     role: user.role,
+    deleted: false,
     email: user.email,
     status: user.status,
     createdAt: user.createdAt.toISOString(),
+    emailVerified: user.emailVerifiedAt !== null,
   };
 }
 

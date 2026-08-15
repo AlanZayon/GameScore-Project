@@ -6,6 +6,7 @@ import {
   type IgdbConfig,
   type JwtConfig,
   type RankingConfig,
+  type SmtpConfig,
   loadAppConfig,
 } from './configuration';
 
@@ -83,5 +84,9 @@ export class AppConfigService {
 
   get antiSpam(): AntiSpamConfig {
     return this.config.antiSpam;
+  }
+
+  get smtp(): SmtpConfig | null {
+    return this.config.smtp;
   }
 }

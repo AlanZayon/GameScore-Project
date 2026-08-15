@@ -38,6 +38,8 @@ export interface CreateGameData {
   releaseDate?: Date | null;
   coverImageUrl?: string | null;
   bannerImageUrl?: string | null;
+  trailerYoutubeId?: string | null;
+  galleryImageUrls?: string[];
   platformIds?: string[];
   genreIds?: string[];
   editedFields?: string[];
@@ -142,6 +144,8 @@ export class GameRepository {
         releaseDate: data.releaseDate ?? null,
         coverImageUrl: data.coverImageUrl ?? null,
         bannerImageUrl: data.bannerImageUrl ?? null,
+        trailerYoutubeId: data.trailerYoutubeId ?? null,
+        galleryImageUrls: data.galleryImageUrls ?? [],
         editedFields: data.editedFields ?? [],
         platforms: data.platformIds
           ? { create: data.platformIds.map((platformId) => ({ platformId })) }
@@ -164,6 +168,8 @@ export class GameRepository {
       releaseDate?: Date | null;
       coverImageUrl?: string | null;
       bannerImageUrl?: string | null;
+      trailerYoutubeId?: string | null;
+      galleryImageUrls?: string[];
       platformIds?: string[];
       genreIds?: string[];
       editedFields: string[];
@@ -201,6 +207,8 @@ export class GameRepository {
         releaseDate: data.releaseDate,
         coverImageUrl: data.coverImageUrl,
         bannerImageUrl: data.bannerImageUrl,
+        trailerYoutubeId: data.trailerYoutubeId,
+        galleryImageUrls: data.galleryImageUrls,
         editedFields: data.editedFields,
       },
       include: gameCardInclude,

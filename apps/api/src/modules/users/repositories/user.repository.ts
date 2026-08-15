@@ -21,6 +21,7 @@ export const credentialsSelect = {
   passwordHash: true,
   createdAt: true,
   deletedAt: true,
+  emailVerifiedAt: true,
 } satisfies Prisma.UserSelect;
 
 /** Everything that may be shown to other people. */
@@ -31,6 +32,7 @@ export const publicUserSelect = {
   avatarUrl: true,
   reputationScore: true,
   role: true,
+  deletedAt: true,
 } satisfies Prisma.UserSelect;
 
 /** The signed-in user's own account. */
@@ -44,6 +46,7 @@ export const accountSelect = {
   role: true,
   status: true,
   createdAt: true,
+  emailVerifiedAt: true,
 } satisfies Prisma.UserSelect;
 
 export const profileSelect = {
@@ -78,6 +81,7 @@ export interface CreateUserData {
   passwordHash: string;
   displayName?: string | null;
   role?: 'USER' | 'MODERATOR' | 'ADMIN';
+  termsAcceptedAt?: Date | null;
 }
 
 /**
@@ -163,6 +167,7 @@ export class UserRepository {
         passwordHash: data.passwordHash,
         displayName: data.displayName ?? null,
         role: data.role ?? 'USER',
+        termsAcceptedAt: data.termsAcceptedAt ?? null,
       },
       select: accountSelect,
     });

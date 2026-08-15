@@ -48,6 +48,10 @@ export interface GameDetailDto extends GameSummaryDto {
   summary: string | null;
   description: string | null;
   bannerImageUrl: string | null;
+  /** YouTube video id for the trailer, when IGDB provided one. */
+  trailerYoutubeId: string | null;
+  /** Screenshot URLs shown as a carousel when there is no trailer. */
+  galleryImageUrls: string[];
   viewCount: number;
   createdAt: string;
   updatedAt: string;

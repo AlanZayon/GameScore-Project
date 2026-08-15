@@ -30,7 +30,7 @@ describe('Player journey (e2e)', () => {
 
     const registration = await http
       .post('/auth/register')
-      .send({ email: 'hero@example.com', username: 'hero', password: 'Str0ngPassword' })
+      .send({ email: 'hero@example.com', username: 'hero', password: 'Str0ngPassword', acceptedTerms: true })
       .expect(201);
     const accessToken = registration.body.accessToken as string;
 
@@ -56,7 +56,7 @@ describe('Player journey (e2e)', () => {
 
     const voter = await http
       .post('/auth/register')
-      .send({ email: 'friend@example.com', username: 'friend', password: 'Str0ngPassword' })
+      .send({ email: 'friend@example.com', username: 'friend', password: 'Str0ngPassword', acceptedTerms: true })
       .expect(201);
 
     await http

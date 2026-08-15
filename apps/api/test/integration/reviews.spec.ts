@@ -42,6 +42,7 @@ describe('Reviews (integration)', () => {
         email: `${username}@example.com`,
         username,
         password: 'Str0ngPassword',
+        acceptedTerms: true,
       })
       .expect(201);
     return response.body.accessToken as string;

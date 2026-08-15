@@ -112,6 +112,13 @@
     "relatedExpansion": "Expansion",
     "relatedBundle": "Bundle",
     "relatedSimilar": "Similar",
+    "mediaTrailer": "Trailer",
+    "mediaTrailerTitle": "Trailer for {name}",
+    "mediaGallery": "Screenshots",
+    "mediaGalleryAlt": "{name} screenshot {index} of {total}",
+    "mediaPrev": "Previous screenshot",
+    "mediaNext": "Next screenshot",
+    "mediaGoTo": "Go to screenshot {index}",
     "readMore": "Read more",
     "readLess": "Read less",
     "bombNotice": "An unusual spike of reviews was detected for this game.",
@@ -165,6 +172,7 @@
     "filterAll": "All",
     "filterPositive": "Recommended",
     "filterNegative": "Not recommended",
+    "deletedAuthor": "Deleted account",
     "sort": {
       "BEST": "Most helpful",
       "RECENT": "Most recent",
@@ -223,7 +231,14 @@
     "passwordMismatch": "Passwords do not match.",
     "changePassword": "Change password",
     "passwordChanged": "Password changed.",
-    "submitting": "Sending…"
+    "submitting": "Sending…",
+    "verifyTitle": "Confirm your email",
+    "verifySuccess": "Email confirmed. You can keep using GameScore.",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy",
+    "acceptTermsPrefix": "I accept the",
+    "acceptTermsAnd": "and the",
+    "termsRequired": "Accept the terms and privacy policy to create an account."
   },
   "profile": {
     "reviews": "Reviews",
@@ -244,7 +259,18 @@
     "bioHint": "Up to 500 characters.",
     "avatarUrl": "Avatar URL",
     "avatarHint": "An https link to an image. File upload is not supported.",
-    "displayNameHint": "Optional. Shown instead of the username."
+    "displayNameHint": "Optional. Shown instead of the username.",
+    "verifyBanner": "Your email is not confirmed yet. Check your inbox, or send the link again.",
+    "resendVerification": "Resend confirmation email",
+    "verifySent": "If that email is registered, a confirmation link is on the way.",
+    "dataTitle": "Your data",
+    "dataBody": "Download a JSON copy of your profile, reviews, votes and reports.",
+    "exportButton": "Download my data",
+    "exportReady": "Export downloaded.",
+    "deleteTitle": "Delete account",
+    "deleteBody": "This anonymises your profile and signs you out. Published reviews stay on the game so scores do not jump. This cannot be undone.",
+    "deleteSubmit": "Delete my account",
+    "deleted": "Account deleted."
   },
   "admin": {
     "title": "Admin",
@@ -434,14 +460,20 @@
     "INVALID_RESET_TOKEN": "This reset link is not valid.",
     "RESET_TOKEN_EXPIRED": "This reset link has expired. Request a new one.",
     "CURRENT_PASSWORD_INVALID": "The current password is incorrect.",
-    "INVALID_AVATAR_URL": "Use a valid https address for the avatar."
+    "INVALID_AVATAR_URL": "Use a valid https address for the avatar.",
+    "INVALID_VERIFICATION_TOKEN": "This confirmation link is not valid.",
+    "VERIFICATION_TOKEN_EXPIRED": "This confirmation link has expired. Request a new one.",
+    "EMAIL_ALREADY_VERIFIED": "This email is already confirmed."
   },
   "footer": {
     "builtWith": "GameScore is a demonstration of statistically honest game ratings.",
     "docs": "API documentation",
     "scoring": "How the score works",
     "games": "Catalogue",
-    "rankings": "Rankings"
+    "rankings": "Rankings",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies"
   },
   "scoring": {
     "metaTitle": "How GameScore ratings work",
@@ -458,6 +490,83 @@
     "labelsBody": "Fewer than 10 reviews always read as “Few reviews”. “Overwhelmingly positive” needs at least 200 reviews and 95% positive. The rest follow stable bands, the same in Portuguese and English.",
     "reviewsTitle": "Helpful reviews",
     "reviewsBody": "Review order mixes usefulness (also Wilson), vote volume, author reputation and a little recency. No single term can dominate."
+  },
+  "cookies": {
+    "title": "Cookies",
+    "body": "GameScore uses a session cookie to keep you signed in and a locale cookie to remember the language. Theme preference stays in this browser only.",
+    "policy": "Cookie policy",
+    "accept": "OK"
+  },
+  "legal": {
+    "disclaimer": "This text is a template for the GameScore demonstration project. It is not legal advice. Have a lawyer review it before a public launch.",
+    "terms": {
+      "metaTitle": "Terms of use",
+      "metaDescription": "Rules for using GameScore accounts, reviews and catalogue data.",
+      "title": "Terms of use",
+      "lead": "By creating an account you agree to use GameScore in good faith: one person, honest reviews, no harassment.",
+      "sections": [
+        {
+          "title": "The service",
+          "body": "GameScore publishes player recommendations and ranks games with a Wilson lower bound. Catalogue metadata may come from IGDB. The product is a demonstration and may change or stop without notice."
+        },
+        {
+          "title": "Accounts",
+          "body": "You are responsible for the email and password you register. One review per game. Do not create extra accounts to move a score. We may suspend accounts that break these rules."
+        },
+        {
+          "title": "Content",
+          "body": "Reviews you publish can be edited or deleted by you, and hidden by moderators. After you delete your account, reviews stay on the game in anonymised form so public scores remain stable."
+        },
+        {
+          "title": "Acceptable use",
+          "body": "No spam, abuse, review bombing, scraping at scale, or attempts to break authentication, rate limits or other people's accounts."
+        }
+      ]
+    },
+    "privacy": {
+      "metaTitle": "Privacy policy",
+      "metaDescription": "What personal data GameScore stores and why.",
+      "title": "Privacy policy",
+      "lead": "We store the minimum needed to run accounts, reviews and anti-spam. You can export or delete that data from Settings.",
+      "sections": [
+        {
+          "title": "What we collect",
+          "body": "Email, username, optional display name, bio and avatar URL, password hash (never the password), reviews, votes, reports, reputation events, and a hashed client IP used only to spot multi-account abuse."
+        },
+        {
+          "title": "Why",
+          "body": "To authenticate you, publish reviews, calculate game scores, detect spam and review bombs, and let moderators act. We do not sell personal data and we do not run advertising trackers."
+        },
+        {
+          "title": "Retention",
+          "body": "Deleting your account anonymises the profile (email and username are replaced), revokes sessions and tokens, and leaves published reviews attributed to “Deleted account”. Export is available until you delete the account."
+        },
+        {
+          "title": "Your rights",
+          "body": "You can access, export and erase your personal data from Settings. For a public launch this template must be reviewed under LGPD/GDPR with a named controller and contact."
+        }
+      ]
+    },
+    "cookies": {
+      "metaTitle": "Cookie policy",
+      "metaDescription": "Cookies and local storage used by GameScore.",
+      "title": "Cookies",
+      "lead": "GameScore only uses cookies that are needed to sign in and remember language. There is no advertising cookie.",
+      "sections": [
+        {
+          "title": "gs_refresh_token",
+          "body": "HttpOnly session cookie set by the API so you stay signed in. It is not readable by scripts. Cleared on logout. Required for authenticated features."
+        },
+        {
+          "title": "NEXT_LOCALE",
+          "body": "Set by the site to remember Portuguese or English. Functional, not advertising."
+        },
+        {
+          "title": "gs-theme and gs-cookie-consent",
+          "body": "Stored in this browser only (localStorage), not as cookies. Theme remembers dark or light. Consent remembers that you dismissed this notice."
+        }
+      ]
+    }
   },
   "locale": {
     "pt-BR": "Português (BR)",

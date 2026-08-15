@@ -17,6 +17,7 @@ process.env.JWT_REFRESH_TOKEN_TTL = '2592000';
 
 // Rate limiting and caching must stay in-process during tests.
 delete process.env.REDIS_URL;
+delete process.env.SMTP_HOST;
 
 // The IGDB integration is exercised through a stubbed HTTP client.
 delete process.env.IGDB_CLIENT_ID;

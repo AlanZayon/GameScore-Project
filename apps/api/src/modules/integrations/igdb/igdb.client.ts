@@ -27,6 +27,11 @@ export interface IgdbCover {
   url?: string;
 }
 
+export interface IgdbVideo {
+  name?: string;
+  video_id?: string;
+}
+
 export interface IgdbGame {
   id: number;
   name?: string;
@@ -36,6 +41,7 @@ export interface IgdbGame {
   first_release_date?: number;
   cover?: IgdbCover;
   screenshots?: IgdbCover[];
+  videos?: IgdbVideo[];
   involved_companies?: IgdbInvolvedCompany[];
   genres?: IgdbNamed[];
   platforms?: IgdbNamed[];
@@ -55,9 +61,17 @@ export interface IgdbRelatedGame {
 }
 
 const GAME_DETAIL_FIELDS =
-  'id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation,dlcs,expansions';
+  'id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,videos.name,videos.video_id,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation,dlcs,expansions';
 
 const RELATED_GAME_FIELDS = 'id,name,cover.url,first_release_date';
+
+/** Prefer an IGDB video whose name looks like a trailer; otherwise the first with an id. */
+export function pickIgdbTrailerYoutubeId(videos: IgdbVideo[] | undefined): string | null {
+  const withId = (videos ?? []).filter((video) => Boolean(video.video_id?.trim()));
+  if (withId.length === 0) return null;
+  const trailer = withId.find((video) => /trailer/i.test(video.name ?? ''));
+  return (trailer ?? withId[0])!.video_id!.trim().slice(0, 32);
+}
 
 interface CachedToken {
   accessToken: string;

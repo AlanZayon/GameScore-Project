@@ -27,6 +27,7 @@ export interface RegisterInput {
   username: string;
   password: string;
   displayName?: string;
+  acceptedTerms: true;
 }
 
 export interface LoginInput {
@@ -74,9 +75,11 @@ export class AuthService {
       username,
       passwordHash,
       displayName: input.displayName?.trim() || null,
+      termsAcceptedAt: new Date(),
     });
 
     this.logger.log(`New account registered: ${created.username}`);
+    await this.sendVerificationEmail(created.id, created.email);
 
     return this.buildSession(
       {
@@ -193,10 +196,12 @@ export class AuthService {
     });
 
     const resetUrl = `${this.config.webUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
-    await this.email.send({
+    await this.deliverEmail({
       to: user.email,
-      subject: 'GameScore password reset',
-      text: `Reset your GameScore password with this link (valid for one hour):\n${resetUrl}\n`,
+      subject: 'Redefinir senha — GameScore',
+      text:
+        `Redefina sua senha do GameScore com este link (válido por uma hora):\n${resetUrl}\n\n` +
+        `Reset your GameScore password with this link (valid for one hour):\n${resetUrl}\n`,
     });
   }
 
@@ -223,6 +228,76 @@ export class AuthService {
       });
     });
     await this.tokens.revokeAllForUser(stored.userId);
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    const stored = await this.prisma.emailVerificationToken.findUnique({
+      where: { tokenHash: sha256(token) },
+    });
+    if (!stored || stored.usedAt) {
+      throw new UnauthorizedError(
+        ERROR_CODES.INVALID_VERIFICATION_TOKEN,
+        'Verification token is not valid',
+      );
+    }
+    if (stored.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedError(
+        ERROR_CODES.VERIFICATION_TOKEN_EXPIRED,
+        'Verification token has expired',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.emailVerificationToken.update({
+        where: { id: stored.id },
+        data: { usedAt: new Date() },
+      });
+      await tx.user.update({
+        where: { id: stored.userId },
+        data: { emailVerifiedAt: new Date() },
+      });
+    });
+  }
+
+  async resendVerification(email: string): Promise<void> {
+    const user = await this.users.findCredentialsByEmail(email.trim().toLowerCase());
+    if (!user || user.deletedAt !== null || user.emailVerifiedAt !== null) {
+      await this.hasher.verify(await this.getDecoyHash(), 'gamescore-decoy-password');
+      return;
+    }
+    await this.sendVerificationEmail(user.id, user.email);
+  }
+
+  private async sendVerificationEmail(userId: string, email: string): Promise<void> {
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.prisma.emailVerificationToken.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    await this.prisma.emailVerificationToken.create({
+      data: { userId, tokenHash: sha256(token), expiresAt },
+    });
+
+    const verifyUrl = `${this.config.webUrl.replace(/\/$/, '')}/verify-email?token=${token}`;
+    await this.deliverEmail({
+      to: email,
+      subject: 'Confirme seu e-mail — GameScore',
+      text:
+        `Confirme seu e-mail do GameScore com este link (válido por 24 horas):\n${verifyUrl}\n\n` +
+        `Confirm your GameScore email with this link (valid for 24 hours):\n${verifyUrl}\n`,
+    });
+  }
+
+  private async deliverEmail(message: { to: string; subject: string; text: string }): Promise<void> {
+    try {
+      await this.email.send(message);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send email to ${message.to}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 
   private async buildSession(
@@ -283,6 +358,7 @@ export class AuthService {
       role: user.role,
       status: user.status,
       createdAt: user.createdAt,
+      emailVerifiedAt: user.emailVerifiedAt,
     });
   }
 

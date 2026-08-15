@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "corepack pnpm --parallel --filter \"./apps/*\" dev",
-    "dev:infra": "docker compose up -d postgres redis",
+    "dev:infra": "docker compose up -d postgres redis mailpit",
     "dev:infra:down": "docker compose down",
     "build": "corepack pnpm -r build",
     "start": "corepack pnpm --parallel --filter \"./apps/*\" start",

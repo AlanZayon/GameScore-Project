@@ -103,6 +103,8 @@ export function toGameDetailDto(
     summary: game.summary,
     description: game.description,
     bannerImageUrl: game.bannerImageUrl,
+    trailerYoutubeId: game.trailerYoutubeId,
+    galleryImageUrls: game.galleryImageUrls ?? [],
     viewCount: game.viewCount,
     createdAt: game.createdAt.toISOString(),
     updatedAt: game.updatedAt.toISOString(),

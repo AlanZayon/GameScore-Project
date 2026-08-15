@@ -134,12 +134,19 @@ export function ReviewCard({
         </Link>
       ) : null}
       <div className="flex items-start gap-3">
-        <Avatar name={review.author.displayName || review.author.username} src={review.author.avatarUrl} />
+        <Avatar
+          name={review.author.deleted ? t('deletedAuthor') : review.author.displayName || review.author.username}
+          src={review.author.deleted ? null : review.author.avatarUrl}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/profile/${review.author.username}`} className="font-medium hover:underline">
-              {review.author.displayName || review.author.username}
-            </Link>
+            {review.author.deleted ? (
+              <span className="font-medium text-content-muted">{t('deletedAuthor')}</span>
+            ) : (
+              <Link href={`/profile/${review.author.username}`} className="font-medium hover:underline">
+                {review.author.displayName || review.author.username}
+              </Link>
+            )}
             {review.viewerIsAuthor ? <Badge tone="brand">{t('yourReview')}</Badge> : null}
             <Badge tone={review.recommended ? 'positive' : 'negative'}>
               {review.recommended ? t('recommended') : t('notRecommended')}

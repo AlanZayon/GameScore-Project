@@ -8,6 +8,7 @@ const validAccount = {
   email: 'Player@Example.com',
   username: 'PlayerOne',
   password: 'Str0ngPassword',
+  acceptedTerms: true as const,
 };
 
 function refreshCookieFrom(response: request.Response): string {
@@ -51,6 +52,8 @@ describe('Authentication (integration)', () => {
         role: 'USER',
         status: 'ACTIVE',
         reputationScore: 0,
+        emailVerified: false,
+        deleted: false,
       });
 
       // The refresh token is only ever delivered as an httpOnly cookie.
@@ -127,6 +130,12 @@ describe('Authentication (integration)', () => {
 
       // Sending a field the DTO does not declare is refused outright, so a
       // client can never nominate itself as an admin.
+      expect(response.body.code).toBe('VALIDATION_FAILED');
+    });
+
+    it('rejects registration without accepting the terms', async () => {
+      const { acceptedTerms: _ignored, ...withoutTerms } = validAccount;
+      const response = await http.post('/auth/register').send(withoutTerms).expect(400);
       expect(response.body.code).toBe('VALIDATION_FAILED');
     });
   });
@@ -294,6 +303,7 @@ describe('Authentication (integration)', () => {
         email: 'player@example.com',
         username: 'playerone',
         role: 'USER',
+        emailVerified: false,
       });
     });
 
@@ -402,6 +412,62 @@ describe('Authentication (integration)', () => {
 
       const profile = await http.get('/users/playerone').expect(200);
       expect(profile.body.bio).toBe('I play games.');
+    });
+  });
+
+  describe('email verification', () => {
+    it('confirms the account when the emailed token is used', async () => {
+      await http.post('/auth/register').send(validAccount).expect(201);
+      const mailbox = context.app.get(ConsoleEmailAdapter);
+      expect(mailbox.lastMessage?.text).toMatch(/verify-email\?token=/);
+      const token = /token=([a-f0-9]+)/.exec(mailbox.lastMessage?.text ?? '')?.[1];
+      expect(token).toEqual(expect.any(String));
+
+      await http.post('/auth/verify-email').send({ token }).expect(204);
+
+      const login = await http
+        .post('/auth/login')
+        .send({ identifier: 'player@example.com', password: validAccount.password })
+        .expect(200);
+      expect(login.body.user.emailVerified).toBe(true);
+    });
+
+    it('always returns 204 when resending verification', async () => {
+      await http.post('/auth/resend-verification').send({ email: 'nobody@example.com' }).expect(204);
+      await http.post('/auth/register').send(validAccount).expect(201);
+      await http.post('/auth/resend-verification').send({ email: 'player@example.com' }).expect(204);
+    });
+  });
+
+  describe('account export and deletion', () => {
+    it('exports the signed-in account and then anonymises it', async () => {
+      const registration = await http.post('/auth/register').send(validAccount).expect(201);
+      const token = registration.body.accessToken as string;
+
+      const exported = await http
+        .get('/users/me/export')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(exported.body.account).toMatchObject({
+        email: 'player@example.com',
+        username: 'playerone',
+        emailVerified: false,
+      });
+      expect(exported.body.reviews).toEqual([]);
+
+      await http
+        .delete('/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ password: validAccount.password })
+        .expect(204);
+
+      await http.get('/users/playerone').expect(404);
+      await http.get('/auth/me').set('Authorization', `Bearer ${token}`).expect(401);
+      await http
+        .post('/auth/login')
+        .send({ identifier: 'player@example.com', password: validAccount.password })
+        .expect(401);
     });
   });
 

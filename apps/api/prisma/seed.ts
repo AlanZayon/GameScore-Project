@@ -172,8 +172,19 @@ async function main(): Promise<void> {
   for (const account of [...staff, ...players]) {
     const user = await prisma.user.upsert({
       where: { email: account.email },
-      update: { role: account.role, displayName: account.displayName },
-      create: { ...account, passwordHash, reputationScore: 20 },
+      update: {
+        role: account.role,
+        displayName: account.displayName,
+        emailVerifiedAt: new Date(),
+        termsAcceptedAt: new Date(),
+      },
+      create: {
+        ...account,
+        passwordHash,
+        reputationScore: 20,
+        emailVerifiedAt: new Date(),
+        termsAcceptedAt: new Date(),
+      },
     });
     users.push(user);
   }

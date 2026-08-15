@@ -18,6 +18,8 @@ Every error is `{ code, message }` plus an optional `details` map and `requestId
 | POST | `/auth/password` | Change password while signed in |
 | POST | `/auth/forgot-password` | Always 204; never reveals whether the email exists |
 | POST | `/auth/reset-password` | Consumes a one-hour token |
+| POST | `/auth/verify-email` | Consumes a 24-hour confirmation token |
+| POST | `/auth/resend-verification` | Always 204; never reveals whether the email exists |
 
 Replaying a rotated refresh token revokes **every** session for that account.
 
@@ -38,7 +40,7 @@ Top rated orders by `confidenceScore` and requires `RANKING_MINIMUM_REVIEWS`.
 
 ## Users
 
-`GET /users/:username`, `GET /users/:username/reviews`, `PATCH /users/me`
+`GET /users/:username`, `GET /users/:username/reviews`, `PATCH /users/me`, `GET /users/me/export`, `DELETE /users/me`
 
 ## Admin
 

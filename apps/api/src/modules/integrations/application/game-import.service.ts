@@ -8,7 +8,7 @@ import { ERROR_CODES } from '../../../common/errors/error-codes';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { GameRepository } from '../../games/repositories/game.repository';
 import { CdnImageProvider } from '../images/image-provider';
-import { IgdbClient, type IgdbGame } from '../igdb/igdb.client';
+import { IgdbClient, pickIgdbTrailerYoutubeId, type IgdbGame } from '../igdb/igdb.client';
 
 /** Cap per kind to avoid IGDB rate-limit spikes on titles with huge DLC catalogues. */
 const MAX_RELATIONS_PER_KIND = 20;
@@ -126,6 +126,8 @@ export class GameImportService {
       releaseDate: mapped.releaseDate,
       coverImageUrl: mapped.coverImageUrl,
       bannerImageUrl: mapped.bannerImageUrl,
+      trailerYoutubeId: mapped.trailerYoutubeId,
+      galleryImageUrls: mapped.galleryImageUrls,
       platformIds,
       genreIds,
     });
@@ -282,6 +284,8 @@ export class GameImportService {
         : null,
       coverImageUrl: this.images.coverUrl(payload.cover?.url ?? null),
       bannerImageUrl: this.images.bannerUrl(payload.screenshots?.[0]?.url ?? null),
+      trailerYoutubeId: pickIgdbTrailerYoutubeId(payload.videos),
+      galleryImageUrls: this.images.galleryUrls((payload.screenshots ?? []).map((shot) => shot.url)),
     };
   }
 

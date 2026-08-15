@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { NavigationProgress } from '@/components/layout/navigation-progress';
+import { CookieBanner } from '@/components/legal/cookie-banner';
 import { DocumentLang } from '@/components/providers/document-lang';
 import { IntlProvider } from '@/components/providers/intl-provider';
 import { routing } from '@/i18n/routing';
@@ -75,6 +76,7 @@ export default async function LocaleLayout({
         <SiteHeader />
         <div className="flex-1">{children}</div>
         <SiteFooter />
+        <CookieBanner />
       </div>
     </IntlProvider>
   );

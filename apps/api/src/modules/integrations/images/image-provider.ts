@@ -16,17 +16,21 @@ export function isAllowedImageUrl(value: string | null | undefined): value is st
   }
 }
 
-/** IGDB thumbnails are tiny; prefer the cover_big size when the URL matches. */
-export function normaliseIgdbImageUrl(url: string | null | undefined, size: 'cover_big' | 'screenshot_huge'): string | null {
+/** IGDB thumbnails are tiny; prefer a larger size when the URL matches. */
+export function normaliseIgdbImageUrl(
+  url: string | null | undefined,
+  size: 'cover_big' | 'screenshot_huge' | 'screenshot_big',
+): string | null {
   if (!url) return null;
   const absolute = url.startsWith('//') ? `https:${url}` : url;
-  const upgraded = absolute.replace(/t_(?:thumb|cover_small|screenshot_med)/, `t_${size}`);
+  const upgraded = absolute.replace(/t_(?:thumb|cover_small|screenshot_med|screenshot_big)/, `t_${size}`);
   return isAllowedImageUrl(upgraded) ? upgraded : null;
 }
 
 export interface ImageProvider {
   coverUrl(raw: string | null | undefined): string | null;
   bannerUrl(raw: string | null | undefined): string | null;
+  galleryUrls(raws: Array<string | null | undefined>, limit?: number): string[];
 }
 
 export class CdnImageProvider implements ImageProvider {
@@ -36,5 +40,18 @@ export class CdnImageProvider implements ImageProvider {
 
   bannerUrl(raw: string | null | undefined): string | null {
     return normaliseIgdbImageUrl(raw, 'screenshot_huge');
+  }
+
+  galleryUrls(raws: Array<string | null | undefined>, limit = 12): string[] {
+    const urls: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of raws) {
+      const url = normaliseIgdbImageUrl(raw, 'screenshot_huge');
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      urls.push(url);
+      if (urls.length >= limit) break;
+    }
+    return urls;
   }
 }

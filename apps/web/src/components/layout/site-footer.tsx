@@ -20,6 +20,15 @@ export async function SiteFooter() {
           <Link href="/rankings" className="hover:text-content">
             {t('rankings')}
           </Link>
+          <Link href="/terms" className="hover:text-content">
+            {t('terms')}
+          </Link>
+          <Link href="/privacy" className="hover:text-content">
+            {t('privacy')}
+          </Link>
+          <Link href="/cookies" className="hover:text-content">
+            {t('cookies')}
+          </Link>
           {showDocs ? (
             <a href={`${publicEnv.apiUrl}/api/docs`} className="hover:text-content">
               {t('docs')}

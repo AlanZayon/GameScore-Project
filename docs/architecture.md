@@ -24,8 +24,8 @@ Controllers never import Prisma. Derived statistics (`GameStatistics`, daily act
 
 | Module | Responsibility |
 | --- | --- |
-| `auth` | Register, login, refresh rotation, logout, JWT guards, roles |
-| `users` | Public profiles |
+| `auth` | Register, login, refresh rotation, logout, JWT guards, roles, password reset, email verification |
+| `users` | Public profiles, settings, data export, account deletion |
 | `games` | Catalogue, slug lookup, platforms, genres, view counting |
 | `search` | Local FTS + trigram; IGDB fallback when thin; preview at `/games/ext/:id`; import on first review |
 | `reviews` | Create/edit/soft-delete, votes, reports, anti-spam, review-bomb detector |
@@ -33,11 +33,13 @@ Controllers never import Prisma. Derived statistics (`GameStatistics`, daily act
 | `rankings` | Top rated, trending, new releases, popular, home feed |
 | `admin` | Moderation, audit log, IGDB import |
 | `integrations` | IGDB client, import/sync, image URL validation |
-| `common` | Config, Prisma, cache, jobs, logging, rate limit, errors |
+| `common` | Config, Prisma, cache, jobs, email, logging, rate limit, errors |
 
 ## Jobs
 
-Background work goes through the `JobQueue` abstraction. The MVP implementation is in-process. Recalculating a game score after a review is **transactional** (same request); review-bomb detection, view counting, ranking cache invalidation and nightly snapshots are queued.
+Background work goes through the `JobQueue` abstraction. Recalculating a game score after a review is **transactional** (same request); review-bomb detection, view counting, ranking cache invalidation and nightly snapshots are queued.
+
+When `REDIS_URL` is set (and `NODE_ENV` is not `test`), the queue is **BullMQ** in the same API process: jobs persist in Redis, retry three times, and survive a restart. Tests and Redis-less environments keep the in-process implementation.
 
 ## Caching
 

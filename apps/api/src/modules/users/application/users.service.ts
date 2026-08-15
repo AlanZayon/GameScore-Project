@@ -1,8 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import type { AuthenticatedUser, CursorPaginatedResponse, ReviewDto, UpdateProfileRequest, UserProfile } from '@gamescore/types';
+import { Algorithm, hash, verify } from '@node-rs/argon2';
+import { randomBytes } from 'node:crypto';
+import type {
+  AccountExport,
+  AuthenticatedUser,
+  CursorPaginatedResponse,
+  ReviewDto,
+  UpdateProfileRequest,
+  UserProfile,
+} from '@gamescore/types';
 
 import { clampLimit, cursorMeta, DEFAULT_CURSOR_SIZE } from '../../../common/http/pagination';
-import { BadRequestError, NotFoundError } from '../../../common/errors/app.exception';
+import { BadRequestError, NotFoundError, UnauthorizedError } from '../../../common/errors/app.exception';
 import { ERROR_CODES } from '../../../common/errors/error-codes';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { toAuthenticatedUser, toUserProfile } from '../mappers/user.mapper';
@@ -10,6 +19,13 @@ import { UserRepository } from '../repositories/user.repository';
 import { ReviewRepository } from '../../reviews/repositories/review.repository';
 import { toReviewDto } from '../../reviews/mappers/review.mapper';
 import type { AuthUser } from '../../auth/domain/auth-user';
+
+const ARGON = {
+  algorithm: Algorithm.Argon2id,
+  memoryCost: 19_456,
+  timeCost: 2,
+  parallelism: 1,
+} as const;
 
 @Injectable()
 export class UsersService {
@@ -102,6 +118,133 @@ export class UsersService {
 
     const updated = await this.users.updateProfile(userId, { displayName, bio, avatarUrl });
     return toAuthenticatedUser(updated);
+  }
+
+  async exportMe(userId: string): Promise<AccountExport> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, deletedAt: null },
+    });
+    if (!user) {
+      throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND, 'Account not found');
+    }
+
+    const [reviews, votes, reports, reputationEvents] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { userId },
+        include: { game: { select: { slug: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.reviewVote.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.reviewReport.findMany({
+        where: { reporterId: userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.reputationEvent.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      account: {
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        bio: user.bio,
+        avatarUrl: user.avatarUrl,
+        reputationScore: user.reputationScore,
+        role: user.role,
+        status: user.status,
+        emailVerified: user.emailVerifiedAt !== null,
+        termsAcceptedAt: user.termsAcceptedAt?.toISOString() ?? null,
+        createdAt: user.createdAt.toISOString(),
+      },
+      reviews: reviews.map((review) => ({
+        id: review.id,
+        gameId: review.gameId,
+        gameSlug: review.game.slug,
+        gameName: review.game.name,
+        recommended: review.recommended,
+        rating: review.rating,
+        text: review.text,
+        hoursPlayed: review.hoursPlayed,
+        createdAt: review.createdAt.toISOString(),
+        updatedAt: review.updatedAt.toISOString(),
+        status: review.status,
+      })),
+      votes: votes.map((vote) => ({
+        reviewId: vote.reviewId,
+        useful: vote.useful,
+        createdAt: vote.createdAt.toISOString(),
+      })),
+      reports: reports.map((report) => ({
+        id: report.id,
+        reviewId: report.reviewId,
+        reason: report.reason,
+        details: report.details,
+        status: report.status,
+        createdAt: report.createdAt.toISOString(),
+      })),
+      reputationEvents: reputationEvents.map((event) => ({
+        id: event.id,
+        reason: event.reason,
+        delta: event.delta,
+        createdAt: event.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async deleteMe(userId: string, password: string): Promise<void> {
+    const user = await this.users.findCredentialsById(userId);
+    if (!user) {
+      throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND, 'Account not found');
+    }
+
+    let passwordMatches = false;
+    try {
+      passwordMatches = await verify(user.passwordHash, password, ARGON);
+    } catch {
+      passwordMatches = false;
+    }
+    if (!passwordMatches) {
+      throw new UnauthorizedError(ERROR_CODES.CURRENT_PASSWORD_INVALID, 'Current password is wrong');
+    }
+
+    const shortId = user.id.replaceAll('-', '').slice(0, 8);
+    const passwordHash = await hash(randomBytes(32).toString('hex'), ARGON);
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          deletedAt: now,
+          email: `deleted+${user.id}@invalid.local`,
+          username: `deleted_${shortId}`,
+          displayName: null,
+          bio: null,
+          avatarUrl: null,
+          passwordHash,
+          emailVerifiedAt: null,
+        },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      await tx.passwordResetToken.updateMany({
+        where: { userId, usedAt: null },
+        data: { usedAt: now },
+      });
+      await tx.emailVerificationToken.updateMany({
+        where: { userId, usedAt: null },
+        data: { usedAt: now },
+      });
+    });
   }
 
   private normaliseAvatarUrl(value: string | null): string | null {

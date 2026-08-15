@@ -22,7 +22,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Day to day, only Postgres and Redis run in Docker. The API (port 3001) and web app (port 3000) run on the host.
+Day to day, Postgres, Redis and Mailpit run in Docker. The API (port 3001) and web app (port 3000) run on the host. Open http://localhost:8025 to read emails sent by password reset and email confirmation.
 
 ## Tests
 
@@ -69,7 +69,7 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 3. Search autocomplete and `/search?q=` return matching local games (with covers); with IGDB configured, thin local results also show external hits that open a preview page and only import on the first review.
 4. Game page at `/games/<slug>` is SSR, has canonical + hreflang, OpenGraph tags, score panel, platform breakdown and reviews.
 5. Portuguese URLs have no locale prefix (`/games/elden-ring`); English is `/en/games/elden-ring`.
-6. Register, login, refresh (reload the page still authenticated) and logout work. Access token is not in localStorage.
+6. Register, login, refresh (reload the page still authenticated) and logout work. Access token is not in localStorage. Registration requires accepting terms; a confirmation email appears in Mailpit.
 7. A signed-in user can create, edit and soft-delete a review; cannot review the same game twice.
 8. Helpfulness votes work; self-vote is rejected. Reports can be submitted.
 9. A 10/10 game does not outrank a 9500/10000 game on Top Rated (Wilson `confidenceScore`, minimum 50 reviews).
@@ -80,5 +80,6 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 14. Moderator (`moderator@gamescore.dev`) can moderate reviews/reports/bombs, list and suspend users, but cannot list games or import from IGDB.
 15. Errors from the API are `{ code, message }`; the UI translates `code` in pt-BR and en.
 16. Swagger is at http://localhost:3001/api/docs.
-17. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e` and `pnpm build` all pass.
-18. `docker compose up -d` keeps Postgres and Redis healthy. Optional: `docker compose --profile apps up --build` for the full stack.
+17. Settings can export personal data and delete (anonymise) the account. `/terms`, `/privacy` and `/cookies` load.
+18. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e` and `pnpm build` all pass.
+19. `docker compose up -d` keeps Postgres, Redis and Mailpit healthy. Optional: `docker compose --profile apps up --build` for the full stack.

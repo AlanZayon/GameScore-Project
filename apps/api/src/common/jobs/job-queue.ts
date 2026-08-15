@@ -1,10 +1,9 @@
 /**
  * Job queue abstraction.
  *
- * The MVP runs background work in-process, which is the right answer while
- * everything lives in one deployable. The interface exists so that swapping in
- * BullMQ or RabbitMQ later is a new implementation of `JobQueue` plus a module
- * binding, with no change to the domain services that enqueue work.
+ * Background work is enqueued through this port. Tests and environments
+ * without Redis use the in-process implementation; otherwise BullMQ persists
+ * jobs in Redis. Domain services never import a specific queue library.
  */
 export const JOB_QUEUE = Symbol('JOB_QUEUE');
 

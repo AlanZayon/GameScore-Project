@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { GameCover } from '@/components/game/game-cover';
+import { GameMedia } from '@/components/game/game-media';
 import { PlatformComparison } from '@/components/game/platform-comparison';
 import { ReviewCard } from '@/components/game/review-card';
 import { ReviewForm } from '@/components/game/review-form';
@@ -23,7 +24,6 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/misc';
 import { Link, usePathname } from '@/i18n/navigation';
 import { apiFetch, qs } from '@/lib/api';
-import { isRemoteCoverUrl } from '@/lib/cover-image';
 import { loginPath } from '@/lib/safe-next';
 
 function relatedHref(item: GameRelatedItemDto): string {
@@ -123,19 +123,11 @@ export function GameDetailClient({
   }
 
   const related = game.related ?? [];
-  const banner = isRemoteCoverUrl(game.bannerImageUrl) ? game.bannerImageUrl : null;
   const longDescription = Boolean(game.description && game.description !== game.summary);
   const loginHref = loginPath(pathname);
 
   return (
     <div className="space-y-8">
-      {banner ? (
-        <div className="relative h-40 overflow-hidden rounded-card sm:h-56">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={banner} alt="" className="h-full w-full object-cover" />
-        </div>
-      ) : null}
-
       <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
         <div className="space-y-8">
           <div className="flex gap-5">
@@ -178,6 +170,12 @@ export function GameDetailClient({
               </p>
             </div>
           </div>
+
+          <GameMedia
+            gameName={game.name}
+            trailerYoutubeId={game.trailerYoutubeId}
+            galleryImageUrls={game.galleryImageUrls ?? []}
+          />
 
           {sessionReady && user && !game.viewerReviewId ? (
             <ReviewForm slug={game.slug} platforms={game.platforms} onSaved={() => void reload()} />

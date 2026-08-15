@@ -112,6 +112,13 @@
     "relatedExpansion": "Expansão",
     "relatedBundle": "Pacote",
     "relatedSimilar": "Semelhante",
+    "mediaTrailer": "Trailer",
+    "mediaTrailerTitle": "Trailer de {name}",
+    "mediaGallery": "Capturas de tela",
+    "mediaGalleryAlt": "Captura {index} de {total} de {name}",
+    "mediaPrev": "Captura anterior",
+    "mediaNext": "Próxima captura",
+    "mediaGoTo": "Ir para a captura {index}",
     "readMore": "Ler mais",
     "readLess": "Ler menos",
     "bombNotice": "Detectamos um pico incomum de avaliações neste jogo.",
@@ -165,6 +172,7 @@
     "filterAll": "Todas",
     "filterPositive": "Recomendam",
     "filterNegative": "Não recomendam",
+    "deletedAuthor": "Conta excluída",
     "sort": {
       "BEST": "Mais úteis",
       "RECENT": "Mais recentes",
@@ -223,7 +231,14 @@
     "passwordMismatch": "As senhas não coincidem.",
     "changePassword": "Alterar senha",
     "passwordChanged": "Senha alterada.",
-    "submitting": "Enviando…"
+    "submitting": "Enviando…",
+    "verifyTitle": "Confirme seu e-mail",
+    "verifySuccess": "E-mail confirmado. Você pode continuar usando o GameScore.",
+    "terms": "Termos de uso",
+    "privacy": "Política de privacidade",
+    "acceptTermsPrefix": "Aceito os",
+    "acceptTermsAnd": "e a",
+    "termsRequired": "Aceite os termos e a política de privacidade para criar a conta."
   },
   "profile": {
     "reviews": "Avaliações",
@@ -244,7 +259,18 @@
     "bioHint": "Até 500 caracteres.",
     "avatarUrl": "URL do avatar",
     "avatarHint": "Link https para uma imagem. Sem upload de arquivo.",
-    "displayNameHint": "Opcional. Aparece no lugar do usuário."
+    "displayNameHint": "Opcional. Aparece no lugar do usuário.",
+    "verifyBanner": "Seu e-mail ainda não foi confirmado. Veja a caixa de entrada ou envie o link de novo.",
+    "resendVerification": "Reenviar e-mail de confirmação",
+    "verifySent": "Se esse e-mail estiver cadastrado, um link de confirmação está a caminho.",
+    "dataTitle": "Seus dados",
+    "dataBody": "Baixe uma cópia JSON do perfil, avaliações, votos e denúncias.",
+    "exportButton": "Baixar meus dados",
+    "exportReady": "Exportação baixada.",
+    "deleteTitle": "Excluir conta",
+    "deleteBody": "Isso anonimiza seu perfil e encerra a sessão. Avaliações publicadas continuam no jogo para a nota não saltar. Não dá para desfazer.",
+    "deleteSubmit": "Excluir minha conta",
+    "deleted": "Conta excluída."
   },
   "admin": {
     "title": "Administração",
@@ -434,14 +460,20 @@
     "INVALID_RESET_TOKEN": "Este link de redefinição é inválido.",
     "RESET_TOKEN_EXPIRED": "Este link de redefinição expirou. Peça outro.",
     "CURRENT_PASSWORD_INVALID": "A senha atual está incorreta.",
-    "INVALID_AVATAR_URL": "Use um endereço https válido para o avatar."
+    "INVALID_AVATAR_URL": "Use um endereço https válido para o avatar.",
+    "INVALID_VERIFICATION_TOKEN": "Este link de confirmação é inválido.",
+    "VERIFICATION_TOKEN_EXPIRED": "Este link de confirmação expirou. Peça outro.",
+    "EMAIL_ALREADY_VERIFIED": "Este e-mail já está confirmado."
   },
   "footer": {
     "builtWith": "GameScore é um projeto de demonstração de avaliação estatística de jogos.",
     "docs": "Documentação da API",
     "scoring": "Como a nota funciona",
     "games": "Catálogo",
-    "rankings": "Rankings"
+    "rankings": "Rankings",
+    "terms": "Termos",
+    "privacy": "Privacidade",
+    "cookies": "Cookies"
   },
   "scoring": {
     "metaTitle": "Como a nota do GameScore funciona",
@@ -458,6 +490,83 @@
     "labelsBody": "Menos de 10 avaliações sempre viram “Poucas avaliações”. “Extremamente positivo” pede pelo menos 200 avaliações e 95% positivas. O restante segue faixas estáveis, iguais no português e no inglês.",
     "reviewsTitle": "Avaliações úteis",
     "reviewsBody": "A ordem das avaliações mistura utilidade (também com Wilson), volume de votos, reputação do autor e um pouco de recência. Nenhum termo pode dominar sozinho."
+  },
+  "cookies": {
+    "title": "Cookies",
+    "body": "O GameScore usa um cookie de sessão para manter você conectado e um cookie de idioma. A preferência de tema fica só neste navegador.",
+    "policy": "Política de cookies",
+    "accept": "OK"
+  },
+  "legal": {
+    "disclaimer": "Este texto é um modelo para o projeto de demonstração GameScore. Não é aconselhamento jurídico. Peça a um advogado para revisar antes de um lançamento público.",
+    "terms": {
+      "metaTitle": "Termos de uso",
+      "metaDescription": "Regras para contas, avaliações e catálogo no GameScore.",
+      "title": "Termos de uso",
+      "lead": "Ao criar uma conta você concorda em usar o GameScore de boa-fé: uma pessoa, avaliações honestas, sem assédio.",
+      "sections": [
+        {
+          "title": "O serviço",
+          "body": "O GameScore publica recomendações de jogadores e ordena jogos com o limite inferior de Wilson. Metadados do catálogo podem vir do IGDB. O produto é uma demonstração e pode mudar ou parar sem aviso."
+        },
+        {
+          "title": "Contas",
+          "body": "Você é responsável pelo e-mail e pela senha cadastrados. Uma avaliação por jogo. Não crie contas extras para mover uma nota. Podemos suspender contas que quebrem essas regras."
+        },
+        {
+          "title": "Conteúdo",
+          "body": "Avaliações que você publica podem ser editadas ou apagadas por você, e ocultadas por moderadores. Depois de excluir a conta, as avaliações continuam no jogo de forma anônima para a nota pública não saltar."
+        },
+        {
+          "title": "Uso aceitável",
+          "body": "Sem spam, abuso, review bomb, coleta em massa ou tentativas de quebrar autenticação, limite de taxa ou contas de outras pessoas."
+        }
+      ]
+    },
+    "privacy": {
+      "metaTitle": "Política de privacidade",
+      "metaDescription": "Que dados pessoais o GameScore guarda e por quê.",
+      "title": "Política de privacidade",
+      "lead": "Guardamos o mínimo para contas, avaliações e anti-spam. Você pode exportar ou apagar esses dados em Configurações.",
+      "sections": [
+        {
+          "title": "O que coletamos",
+          "body": "E-mail, usuário, nome de exibição opcional, bio e URL de avatar, hash da senha (nunca a senha), avaliações, votos, denúncias, eventos de reputação e um hash do IP do cliente só para detectar contas múltiplas."
+        },
+        {
+          "title": "Para quê",
+          "body": "Autenticar você, publicar avaliações, calcular notas, detectar spam e review bomb, e permitir a moderação. Não vendemos dados pessoais e não usamos rastreadores de anúncio."
+        },
+        {
+          "title": "Retenção",
+          "body": "Excluir a conta anonimiza o perfil (e-mail e usuário são substituídos), revoga sessões e tokens, e deixa avaliações publicadas como “Conta excluída”. A exportação existe até você apagar a conta."
+        },
+        {
+          "title": "Seus direitos",
+          "body": "Você pode acessar, exportar e apagar seus dados em Configurações. Para um lançamento público este modelo precisa ser revisado sob a LGPD, com um controlador e um contato nomeados."
+        }
+      ]
+    },
+    "cookies": {
+      "metaTitle": "Política de cookies",
+      "metaDescription": "Cookies e armazenamento local usados pelo GameScore.",
+      "title": "Cookies",
+      "lead": "O GameScore só usa cookies necessários para entrar e lembrar o idioma. Não há cookie de publicidade.",
+      "sections": [
+        {
+          "title": "gs_refresh_token",
+          "body": "Cookie de sessão httpOnly definido pela API para manter você conectado. Scripts não leem esse cookie. Ele some no logout. É necessário para recursos autenticados."
+        },
+        {
+          "title": "NEXT_LOCALE",
+          "body": "Definido pelo site para lembrar português ou inglês. Funcional, não é publicidade."
+        },
+        {
+          "title": "gs-theme e gs-cookie-consent",
+          "body": "Ficam só neste navegador (localStorage), não são cookies. O tema lembra claro ou escuro. O consentimento lembra que você fechou este aviso."
+        }
+      ]
+    }
   },
   "locale": {
     "pt-BR": "Português (BR)",

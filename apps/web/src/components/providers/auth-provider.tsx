@@ -10,7 +10,13 @@ interface AuthContextValue {
   accessToken: string | null;
   ready: boolean;
   login: (identifier: string, password: string) => Promise<void>;
-  register: (input: { email: string; username: string; password: string; displayName?: string }) => Promise<void>;
+  register: (input: {
+    email: string;
+    username: string;
+    password: string;
+    displayName?: string;
+    acceptedTerms: true;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   applyUser: (user: AuthenticatedUser) => void;
 }
@@ -93,7 +99,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const register = useCallback(
-    async (input: { email: string; username: string; password: string; displayName?: string }) => {
+    async (input: {
+      email: string;
+      username: string;
+      password: string;
+      displayName?: string;
+      acceptedTerms: true;
+    }) => {
       const session = await apiFetch<AuthSessionResponse>('/auth/register', {
         method: 'POST',
         body: input,

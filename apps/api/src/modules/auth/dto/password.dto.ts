@@ -37,3 +37,17 @@ export class ChangePasswordDto {
   })
   newPassword!: string;
 }
+
+export class VerifyEmailDto {
+  @ApiProperty()
+  @IsString()
+  @Length(16, 128)
+  token!: string;
+}
+
+export class ResendVerificationDto {
+  @ApiProperty()
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+}

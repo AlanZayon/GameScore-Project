@@ -1,6 +1,6 @@
 'use client';
 
-import type { AuthenticatedUser, UserProfile } from '@gamescore/types';
+import type { AccountExport, AuthenticatedUser, UserProfile } from '@gamescore/types';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
@@ -28,6 +28,10 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [changing, setChanging] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -43,6 +47,7 @@ export default function SettingsPage() {
   }, [ready, user, router]);
 
   if (!ready || !user || !accessToken) return null;
+  const account = user;
 
   async function saveProfile(event: React.FormEvent) {
     event.preventDefault();
@@ -94,12 +99,77 @@ export default function SettingsPage() {
     }
   }
 
+  async function resendVerification() {
+    setResending(true);
+    try {
+      await apiFetch('/auth/resend-verification', {
+        method: 'POST',
+        body: { email: account.email },
+      });
+      toast.push(t('verifySent'), 'success');
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
+      toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
+    } finally {
+      setResending(false);
+    }
+  }
+
+  async function downloadExport() {
+    setExporting(true);
+    try {
+      const payload = await apiFetch<AccountExport>('/users/me/export', { accessToken });
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `gamescore-export-${account.username}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.push(t('exportReady'), 'success');
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
+      toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function deleteAccount(event: React.FormEvent) {
+    event.preventDefault();
+    setDeleting(true);
+    try {
+      await apiFetch('/users/me', {
+        method: 'DELETE',
+        accessToken,
+        body: { password: deletePassword },
+      });
+      toast.push(t('deleted'), 'success');
+      await logout();
+      router.push('/');
+    } catch (error) {
+      const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
+      toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <main className="container-page max-w-xl space-y-10 py-10">
       <div>
         <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="mt-1 text-content-muted">{t('subtitle')}</p>
       </div>
+
+      {!account.emailVerified ? (
+        <div className="rounded-lg border border-border-subtle bg-surface-raised px-4 py-3">
+          <p className="text-sm text-content-muted">{t('verifyBanner')}</p>
+          <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={resending} onClick={() => void resendVerification()}>
+            {resending ? authT('submitting') : t('resendVerification')}
+          </Button>
+        </div>
+      ) : null}
 
       <form onSubmit={(event) => void saveProfile(event)} className="space-y-4">
         <div>
@@ -170,6 +240,36 @@ export default function SettingsPage() {
         </div>
         <Button type="submit" disabled={changing}>
           {changing ? authT('submitting') : authT('changePassword')}
+        </Button>
+      </form>
+
+      <section className="space-y-4 border-t border-border-subtle pt-8">
+        <h2 className="text-xl font-semibold">{t('dataTitle')}</h2>
+        <p className="text-sm text-content-muted">{t('dataBody')}</p>
+        <Button type="button" variant="secondary" disabled={exporting} onClick={() => void downloadExport()}>
+          {exporting ? authT('submitting') : t('exportButton')}
+        </Button>
+      </section>
+
+      <form
+        onSubmit={(event) => void deleteAccount(event)}
+        className="space-y-4 border-t border-border-subtle pt-8"
+      >
+        <h2 className="text-xl font-semibold text-negative">{t('deleteTitle')}</h2>
+        <p className="text-sm text-content-muted">{t('deleteBody')}</p>
+        <div>
+          <Label htmlFor="deletePassword">{authT('currentPassword')}</Label>
+          <Input
+            id="deletePassword"
+            type="password"
+            value={deletePassword}
+            onChange={(event) => setDeletePassword(event.target.value)}
+            required
+            autoComplete="current-password"
+          />
+        </div>
+        <Button type="submit" variant="danger" disabled={deleting}>
+          {deleting ? authT('submitting') : t('deleteSubmit')}
         </Button>
       </form>
     </main>

@@ -50,6 +50,8 @@ export class GameSyncService {
       releaseDate: edited.has('releaseDate') ? game.releaseDate : mapped.releaseDate,
       coverImageUrl: edited.has('coverImageUrl') ? game.coverImageUrl : mapped.coverImageUrl,
       bannerImageUrl: edited.has('bannerImageUrl') ? game.bannerImageUrl : mapped.bannerImageUrl,
+      trailerYoutubeId: edited.has('trailerYoutubeId') ? game.trailerYoutubeId : mapped.trailerYoutubeId,
+      galleryImageUrls: edited.has('galleryImageUrls') ? game.galleryImageUrls : mapped.galleryImageUrls,
       editedFields: game.editedFields,
     };
 

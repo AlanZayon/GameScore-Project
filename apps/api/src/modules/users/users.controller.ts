@@ -1,8 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Query } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, IsUrl, Length, Max, MaxLength, Min, ValidateIf } from 'class-validator';
-import type { AuthenticatedUser, CursorPaginatedResponse, ReviewDto, UserProfile } from '@gamescore/types';
+import type {
+  AccountExport,
+  AuthenticatedUser,
+  CursorPaginatedResponse,
+  ReviewDto,
+  UserProfile,
+} from '@gamescore/types';
 
 import { Authenticated, OptionalAuth } from '../auth/decorators/auth.decorators';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -44,10 +50,33 @@ class UpdateProfileDto {
   avatarUrl?: string | null;
 }
 
+class DeleteAccountDto {
+  @ApiProperty()
+  @IsString()
+  @Length(1, 128)
+  password!: string;
+}
+
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly users: UsersService) {}
+
+  @Get('me/export')
+  @Authenticated()
+  @ApiOperation({ summary: 'Download a copy of the signed-in players personal data' })
+  @ApiOkResponse({ description: 'Portable JSON export' })
+  exportMe(@CurrentUser() user: AuthUser): Promise<AccountExport> {
+    return this.users.exportMe(user.id);
+  }
+
+  @Delete('me')
+  @Authenticated()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Anonymise the signed-in account. Reviews stay on games.' })
+  deleteMe(@CurrentUser() user: AuthUser, @Body() dto: DeleteAccountDto): Promise<void> {
+    return this.users.deleteMe(user.id, dto.password);
+  }
 
   @Patch('me')
   @Authenticated()

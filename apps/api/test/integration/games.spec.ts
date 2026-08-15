@@ -118,7 +118,7 @@ describe('Games and search (integration)', () => {
     });
     const registration = await http
       .post('/auth/register')
-      .send({ email: 'reviewer@example.com', username: 'reviewer', password: 'Str0ngPassword' })
+      .send({ email: 'reviewer@example.com', username: 'reviewer', password: 'Str0ngPassword', acceptedTerms: true })
       .expect(201);
     const token = registration.body.accessToken as string;
 

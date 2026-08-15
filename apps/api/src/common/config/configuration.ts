@@ -42,6 +42,15 @@ export interface AntiSpamConfig {
   maxAccountsPerIp: number;
 }
 
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string | null;
+  pass: string | null;
+  from: string;
+}
+
 export interface AppConfig {
   nodeEnv: NodeEnvironment;
   isProduction: boolean;
@@ -58,6 +67,7 @@ export interface AppConfig {
   igdb: IgdbConfig;
   ranking: RankingConfig;
   antiSpam: AntiSpamConfig;
+  smtp: SmtpConfig | null;
 }
 
 class ConfigurationError extends Error {
@@ -86,6 +96,12 @@ function readInt(env: NodeJS.ProcessEnv, key: string, fallback: number): number 
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readBoolean(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
+  const raw = env[key]?.trim().toLowerCase();
+  if (!raw) return fallback;
+  return raw === 'true' || raw === '1' || raw === 'yes';
 }
 
 function readNodeEnv(env: NodeJS.ProcessEnv): NodeEnvironment {
@@ -126,6 +142,12 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       if (secret && secret.length < 32) {
         problems.push(`${key} must be at least 32 characters long in production`);
       }
+    }
+    if (!env.SMTP_HOST?.trim()) {
+      problems.push('SMTP_HOST is required in production');
+    }
+    if (!env.SMTP_FROM?.trim()) {
+      problems.push('SMTP_FROM is required in production');
     }
   }
 
@@ -174,5 +196,15 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       minimumTextLength: readInt(env, 'ANTISPAM_MIN_TEXT_LENGTH', 20),
       maxAccountsPerIp: readInt(env, 'ANTISPAM_MAX_ACCOUNTS_PER_IP', 5),
     },
+    smtp: env.SMTP_HOST?.trim()
+      ? {
+          host: env.SMTP_HOST.trim(),
+          port: readInt(env, 'SMTP_PORT', 587),
+          secure: readBoolean(env, 'SMTP_SECURE', false),
+          user: env.SMTP_USER?.trim() || null,
+          pass: env.SMTP_PASS?.trim() || null,
+          from: env.SMTP_FROM?.trim() || 'GameScore <noreply@localhost>',
+        }
+      : null,
   };
 }

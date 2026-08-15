@@ -114,7 +114,7 @@ describe('Admin moderation (integration)', () => {
 
     const player = await http
       .post('/auth/register')
-      .send({ email: 'player@example.com', username: 'player', password: 'Str0ngPassword' })
+      .send({ email: 'player@example.com', username: 'player', password: 'Str0ngPassword', acceptedTerms: true })
       .expect(201);
 
     const asUser = await http
@@ -140,7 +140,7 @@ describe('Admin moderation (integration)', () => {
 
     const author = await http
       .post('/auth/register')
-      .send({ email: 'author@example.com', username: 'author', password: 'Str0ngPassword' })
+      .send({ email: 'author@example.com', username: 'author', password: 'Str0ngPassword', acceptedTerms: true })
       .expect(201);
 
     const created = await http

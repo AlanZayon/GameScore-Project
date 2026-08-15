@@ -1,8 +1,8 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useLocale, useTranslations } from 'next-intl';
-import type { CreateReviewRequest, PlatformDto, ReviewDto } from '@gamescore/types';
+import { useTranslations } from 'next-intl';
+import type { CreateReviewRequest, PlatformDto, ReviewDto, UpdateReviewRequest } from '@gamescore/types';
 
 import { Button } from '@/components/ui/button';
 import { Input, Label, Textarea } from '@/components/ui/input';
@@ -20,46 +20,33 @@ interface FormValues {
 
 const MIN_TEXT = 20;
 
-function textValidationCopy(locale: string, min: number) {
-  if (locale.startsWith('en')) {
-    return {
-      hint: `At least ${min} characters.`,
-      required: 'Please write your review.',
-      tooShort: `Reviews need at least ${min} characters.`,
-    };
-  }
-  return {
-    hint: `Mínimo de ${min} caracteres.`,
-    required: 'Escreva sua avaliação.',
-    tooShort: `A avaliação precisa ter pelo menos ${min} caracteres.`,
-  };
-}
-
 export function ReviewForm({
   slug,
   externalId,
   platforms,
-  onCreated,
+  existing,
+  onSaved,
+  onCancel,
 }: {
   slug?: string;
   /** When set, first review imports the IGDB game into the catalogue. */
   externalId?: string;
   platforms: PlatformDto[];
-  onCreated: (review: ReviewDto) => void;
+  existing?: ReviewDto;
+  onSaved: (review: ReviewDto) => void;
+  onCancel?: () => void;
 }) {
   const t = useTranslations('reviews');
   const errors = useTranslations('errors');
-  const locale = useLocale();
-  const textCopy = textValidationCopy(locale, MIN_TEXT);
   const { accessToken } = useAuth();
   const toast = useToast();
   const form = useForm<FormValues>({
     defaultValues: {
-      recommended: 'yes',
-      text: '',
-      rating: '',
-      hoursPlayed: '',
-      platformId: '',
+      recommended: existing ? (existing.recommended ? 'yes' : 'no') : 'yes',
+      text: existing?.text ?? '',
+      rating: existing?.rating != null ? String(existing.rating) : '',
+      hoursPlayed: existing?.hoursPlayed != null ? String(existing.hoursPlayed) : '',
+      platformId: existing?.platform?.id ?? '',
     },
   });
 
@@ -68,21 +55,27 @@ export function ReviewForm({
       toast.push(errors('UNAUTHORIZED'), 'error');
       return;
     }
-    const payload: CreateReviewRequest = {
+    const payload: CreateReviewRequest | UpdateReviewRequest = {
       recommended: values.recommended === 'yes',
       text: values.text,
       rating: values.rating ? Number(values.rating) : null,
       hoursPlayed: values.hoursPlayed ? Number(values.hoursPlayed) : null,
       platformId: values.platformId || null,
     };
-    const path = externalId
-      ? `/games/external/${externalId}/reviews`
-      : `/games/${slug}/reviews`;
     try {
-      const review = await apiFetch<ReviewDto>(path, { method: 'POST', accessToken, body: payload });
-      toast.push(t('published'), 'success');
-      form.reset();
-      onCreated(review);
+      const review = existing
+        ? await apiFetch<ReviewDto>(`/reviews/${existing.id}`, {
+            method: 'PATCH',
+            accessToken,
+            body: payload,
+          })
+        : await apiFetch<ReviewDto>(
+            externalId ? `/games/external/${externalId}/reviews` : `/games/${slug}/reviews`,
+            { method: 'POST', accessToken, body: payload },
+          );
+      toast.push(existing ? t('updated') : t('published'), 'success');
+      if (!existing) form.reset();
+      onSaved(review);
     } catch (error) {
       const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
       toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
@@ -92,8 +85,11 @@ export function ReviewForm({
   const textError = form.formState.errors.text;
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 rounded-card border border-border-subtle bg-surface p-4">
-      <h3 className="font-semibold">{t('writeTitle')}</h3>
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="space-y-4 rounded-card border border-border-subtle bg-surface p-4"
+    >
+      <h3 className="font-semibold">{existing ? t('editTitle') : t('writeTitle')}</h3>
       <div className="flex gap-3">
         <label className="flex items-center gap-2 text-sm">
           <input type="radio" value="yes" {...form.register('recommended')} />
@@ -111,11 +107,11 @@ export function ReviewForm({
           rows={5}
           aria-invalid={Boolean(textError)}
           {...form.register('text', {
-            required: textCopy.required,
-            minLength: { value: MIN_TEXT, message: textCopy.tooShort },
+            required: t('textRequired'),
+            minLength: { value: MIN_TEXT, message: t('textTooShort', { min: MIN_TEXT }) },
           })}
         />
-        <p className="mt-1 text-xs text-content-subtle">{textCopy.hint}</p>
+        <p className="mt-1 text-xs text-content-subtle">{t('textHint', { min: MIN_TEXT })}</p>
         {textError?.message ? (
           <p className="mt-1 text-xs text-danger" role="alert">
             {textError.message}
@@ -135,6 +131,7 @@ export function ReviewForm({
           <Label htmlFor="platform">{t('platformLabel')}</Label>
           <select
             id="platform"
+            aria-label={t('platformLabel')}
             className="w-full rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
             {...form.register('platformId')}
           >
@@ -147,9 +144,16 @@ export function ReviewForm({
           </select>
         </div>
       </div>
-      <Button type="submit" disabled={form.formState.isSubmitting}>
-        {t('submit')}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {existing ? t('saveEdit') : t('submit')}
+        </Button>
+        {onCancel ? (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            {t('cancel')}
+          </Button>
+        ) : null}
+      </div>
     </form>
   );
 }

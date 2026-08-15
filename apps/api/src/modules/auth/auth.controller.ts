@@ -31,6 +31,7 @@ import { REFRESH_TOKEN_COOKIE } from './domain/auth-user';
 import type { AuthUser } from './domain/auth-user';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -121,6 +122,33 @@ export class AuthController {
   @ApiOkResponse({ description: 'Current account' })
   async me(@CurrentUser() user: AuthUser): Promise<AuthenticatedUser> {
     return this.auth.currentUser(user.id);
+  }
+
+  @Post('password')
+  @Authenticated()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Change the signed-in password' })
+  async changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<void> {
+    await this.auth.changePassword(user.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 5, ttl: 60 * 1000, blockDuration: 5 * 60 * 1000 } })
+  @ApiOperation({ summary: 'Request a password reset email. Always succeeds.' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    await this.auth.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Throttle({ default: { limit: 10, ttl: 60 * 1000, blockDuration: 5 * 60 * 1000 } })
+  @ApiOperation({ summary: 'Set a new password using a reset token' })
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    await this.auth.resetPassword(dto.token, dto.password);
   }
 
   private completeSession(response: Response, result: AuthResult): AuthSessionResponse {

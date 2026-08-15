@@ -2,7 +2,7 @@
 
 import { Menu, Moon, Sun, Languages } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { useTheme } from '@/components/providers/theme-provider';
@@ -12,6 +12,21 @@ import { Dropdown } from '@/components/ui/misc';
 import { Skeleton } from '@/components/ui/skeletons';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
+import { cn } from '@/lib/cn';
+
+function NavLink({ href, children }: { href: string; children: ReactNode }) {
+  const pathname = usePathname();
+  const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+  return (
+    <Link
+      href={href}
+      className={cn('hover:text-content', active ? 'font-semibold text-content' : 'text-content-muted')}
+      aria-current={active ? 'page' : undefined}
+    >
+      {children}
+    </Link>
+  );
+}
 
 export function SiteHeader() {
   const t = useTranslations('nav');
@@ -29,8 +44,9 @@ export function SiteHeader() {
           GameScore
         </Link>
         <nav className="hidden items-center gap-4 text-sm md:flex">
-          <Link href="/games">{t('games')}</Link>
-          <Link href="/rankings">{t('rankings')}</Link>
+          <NavLink href="/games">{t('games')}</NavLink>
+          <NavLink href="/rankings">{t('rankings')}</NavLink>
+          <NavLink href="/scoring">{t('scoring')}</NavLink>
         </nav>
         <SearchBox className="hidden min-w-0 flex-1 md:block" />
         <div className="ml-auto flex items-center gap-1">
@@ -65,8 +81,14 @@ export function SiteHeader() {
                 </Button>
               }
             >
-              <Link href={`/profile/${user.username}`} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover">
+              <Link
+                href={`/profile/${user.username}`}
+                className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover"
+              >
                 {t('profile')}
+              </Link>
+              <Link href="/settings" className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover">
+                {t('settings')}
               </Link>
               {user.role !== 'USER' ? (
                 <Link href="/admin" className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover">
@@ -91,7 +113,14 @@ export function SiteHeader() {
               </Link>
             </div>
           )}
-          <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setMenuOpen((value) => !value)} aria-label={t('openMenu')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setMenuOpen((value) => !value)}
+            aria-label={menuOpen ? t('closeMenu') : t('openMenu')}
+            aria-expanded={menuOpen}
+          >
             <Menu className="h-4 w-4" />
           </Button>
         </div>
@@ -100,14 +129,24 @@ export function SiteHeader() {
         <div className="border-t border-border-subtle px-4 py-3 md:hidden">
           <SearchBox />
           <div className="mt-3 flex flex-col gap-2 text-sm">
-            <Link href="/games">{t('games')}</Link>
-            <Link href="/rankings">{t('rankings')}</Link>
+            <NavLink href="/games">{t('games')}</NavLink>
+            <NavLink href="/rankings">{t('rankings')}</NavLink>
+            <NavLink href="/scoring">{t('scoring')}</NavLink>
             {!user ? (
               <>
                 <Link href="/login">{t('login')}</Link>
                 <Link href="/register">{t('register')}</Link>
               </>
-            ) : null}
+            ) : (
+              <>
+                <Link href={`/profile/${user.username}`}>{t('profile')}</Link>
+                <Link href="/settings">{t('settings')}</Link>
+                {user.role !== 'USER' ? <Link href="/admin">{t('admin')}</Link> : null}
+                <button type="button" className="text-left" onClick={() => void logout()}>
+                  {t('logout')}
+                </button>
+              </>
+            )}
           </div>
         </div>
       ) : null}

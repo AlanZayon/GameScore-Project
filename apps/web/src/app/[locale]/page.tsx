@@ -1,15 +1,20 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { GameCard } from '@/components/game/game-card';
-import { EmptyState } from '@/components/ui/misc';
+import { GameCover } from '@/components/game/game-cover';
+import { EmptyState, ErrorState } from '@/components/ui/misc';
 import { Link } from '@/i18n/navigation';
 import { apiFetch } from '@/lib/api';
-import type { HomeFeedDto } from '@gamescore/types';
+import type { HomeFeedDto, HomeRecentReviewDto } from '@gamescore/types';
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('home');
+  const common = await getTranslations('common');
+  const reviewsT = await getTranslations('reviews');
+  const scoreT = await getTranslations('score');
+  let failed = false;
   let feed: HomeFeedDto = {
     popular: [],
     topRated: [],
@@ -21,7 +26,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   try {
     feed = await apiFetch<HomeFeedDto>('/home');
   } catch {
-    // API may be down during first paint in local setup.
+    failed = true;
   }
 
   const sections = [
@@ -38,11 +43,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <h1 className="text-4xl font-bold sm:text-5xl">{t('heroTitle')}</h1>
         <p className="text-lg text-content-muted">{t('heroSubtitle')}</p>
         <div className="flex flex-wrap gap-3">
-          <Link href="/games" className="rounded-lg bg-brand px-5 py-2.5 font-medium text-brand-contrast hover:bg-brand-hover">
+          <Link
+            href="/games"
+            className="rounded-lg bg-brand px-5 py-2.5 font-medium text-brand-contrast hover:bg-brand-hover"
+          >
             {t('heroCta')}
           </Link>
-          <Link href="/rankings" className="rounded-lg border border-border-strong px-5 py-2.5 font-medium hover:bg-surface-hover">
+          <Link
+            href="/rankings"
+            className="rounded-lg border border-border-strong px-5 py-2.5 font-medium hover:bg-surface-hover"
+          >
             {t('heroSecondaryCta')}
+          </Link>
+          <Link href="/scoring" className="rounded-lg px-5 py-2.5 font-medium text-brand hover:underline">
+            {scoreT('learnMore')}
           </Link>
         </div>
         <p className="text-sm text-content-subtle">
@@ -51,12 +65,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </p>
       </section>
 
+      {failed ? <ErrorState title={t('emptySection')} /> : null}
+
       {sections.map((section) => (
         <section key={section.key} className="space-y-4">
           <div className="flex items-end justify-between">
             <h2 className="text-2xl font-semibold">{t(section.key)}</h2>
             <Link href={section.href} className="text-sm text-brand hover:underline">
-              {t('heroCta')}
+              {common('seeAll')}
             </Link>
           </div>
           {section.games.length === 0 ? (
@@ -64,16 +80,54 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {section.games.map((game, index) => (
-                <GameCard
-                  key={game.id}
-                  game={game}
-                  priority={section.key === 'popular' && index === 0}
-                />
+                <GameCard key={game.id} game={game} priority={section.key === 'popular' && index === 0} />
               ))}
             </div>
           )}
         </section>
       ))}
+
+      {feed.recentReviews.length > 0 ? (
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold">{t('recentReviews')}</h2>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {feed.recentReviews.map((review) => (
+              <RecentReviewCard key={review.id} review={review} recommendLabel={reviewsT('recommended')} notLabel={reviewsT('notRecommended')} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
+  );
+}
+
+function RecentReviewCard({
+  review,
+  recommendLabel,
+  notLabel,
+}: {
+  review: HomeRecentReviewDto;
+  recommendLabel: string;
+  notLabel: string;
+}) {
+  return (
+    <Link
+      href={`/games/${review.gameSlug}`}
+      className="flex gap-3 rounded-card border border-border-subtle bg-surface p-3 transition hover:border-brand/40 hover:bg-surface-hover"
+    >
+      <GameCover
+        name={review.gameName}
+        src={review.gameCoverImageUrl}
+        className="h-20 w-14 shrink-0 rounded-md"
+        sizes="56px"
+      />
+      <div className="min-w-0 space-y-1">
+        <p className="truncate font-medium">{review.gameName}</p>
+        <p className="text-xs text-content-subtle">
+          @{review.authorUsername} · {review.recommended ? recommendLabel : notLabel}
+        </p>
+        <p className="line-clamp-2 text-sm text-content-muted">{review.excerpt}</p>
+      </div>
+    </Link>
   );
 }

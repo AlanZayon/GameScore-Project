@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { CatalogClient } from './catalog-client';
+import { ErrorState } from '@/components/ui/misc';
 import { apiFetch, qs } from '@/lib/api';
 import type { GenreDto, PaginatedResponse, PlatformDto, GameSummaryDto } from '@gamescore/types';
 
@@ -15,7 +16,9 @@ export default async function GamesPage({
   const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations('catalog');
+  const common = await getTranslations('common');
 
+  let failed = false;
   let games: PaginatedResponse<GameSummaryDto> = {
     items: [],
     meta: { page: 1, limit: 20, total: 0, totalPages: 0, hasNextPage: false },
@@ -36,7 +39,7 @@ export default async function GamesPage({
       apiFetch<GenreDto[]>('/genres'),
     ]);
   } catch {
-    // API may be offline during local first render.
+    failed = true;
   }
 
   return (
@@ -45,7 +48,9 @@ export default async function GamesPage({
         <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="mt-1 text-content-muted">{t('subtitle')}</p>
       </div>
-      <CatalogClient games={games} platforms={platforms} genres={genres} filters={query} />
+      {failed ? <ErrorState title={common('errorTitle')} /> : (
+        <CatalogClient games={games} platforms={platforms} genres={genres} filters={query} />
+      )}
     </main>
   );
 }

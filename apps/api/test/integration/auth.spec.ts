@@ -1,5 +1,6 @@
 import request from 'supertest';
 
+import { ConsoleEmailAdapter } from '../../src/common/email/console-email.adapter';
 import { REFRESH_TOKEN_COOKIE } from '../../src/modules/auth/domain/auth-user';
 import { createTestApp, type TestContext } from '../support/test-app';
 
@@ -344,6 +345,63 @@ describe('Authentication (integration)', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(403);
       expect(response.body.code).toBe('ACCOUNT_SUSPENDED');
+    });
+  });
+
+  describe('password reset', () => {
+    it('always returns 204 and never reveals whether the email exists', async () => {
+      await http.post('/auth/register').send(validAccount).expect(201);
+
+      await http.post('/auth/forgot-password').send({ email: 'nobody@example.com' }).expect(204);
+      await http.post('/auth/forgot-password').send({ email: 'player@example.com' }).expect(204);
+    });
+
+    it('resets the password when the emailed token is used', async () => {
+      await http.post('/auth/register').send(validAccount).expect(201);
+      const mailbox = context.app.get(ConsoleEmailAdapter);
+
+      await http.post('/auth/forgot-password').send({ email: 'player@example.com' }).expect(204);
+      expect(mailbox.lastMessage).toEqual(
+        expect.objectContaining({
+          to: 'player@example.com',
+          text: expect.stringMatching(/reset-password\?token=/),
+        }),
+      );
+      const token = /token=([a-f0-9]+)/.exec(mailbox.lastMessage?.text ?? '')?.[1];
+      expect(token).toEqual(expect.any(String));
+
+      await http
+        .post('/auth/reset-password')
+        .send({ token, password: 'NewPass123' })
+        .expect(204);
+
+      await http
+        .post('/auth/login')
+        .send({ identifier: 'player@example.com', password: 'Str0ngPassword' })
+        .expect(401);
+
+      await http
+        .post('/auth/login')
+        .send({ identifier: 'player@example.com', password: 'NewPass123' })
+        .expect(200);
+    });
+  });
+
+  describe('PATCH /users/me', () => {
+    it('updates display name and bio', async () => {
+      const registration = await http.post('/auth/register').send(validAccount).expect(201);
+      const token = registration.body.accessToken as string;
+
+      const response = await http
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ displayName: 'Hero', bio: 'I play games.' })
+        .expect(200);
+
+      expect(response.body.displayName).toBe('Hero');
+
+      const profile = await http.get('/users/playerone').expect(200);
+      expect(profile.body.bio).toBe('I play games.');
     });
   });
 

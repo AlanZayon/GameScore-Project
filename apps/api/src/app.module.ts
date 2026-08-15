@@ -5,6 +5,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 
 import { CacheModule } from './common/cache/cache.module';
 import { AppConfigModule } from './common/config/app-config.module';
+import { EmailModule } from './common/email/email.module';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { JobsModule } from './common/jobs/jobs.module';
 import { LoggingModule } from './common/logging/logging.module';
@@ -31,6 +32,7 @@ import { UsersModule } from './modules/users/users.module';
     AppConfigModule,
     LoggingModule,
     PrismaModule,
+    EmailModule,
     CacheModule,
     RateLimitModule,
     JobsModule,

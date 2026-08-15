@@ -17,6 +17,12 @@ export interface AuthenticatedUser extends UserSummary {
   createdAt: string;
 }
 
+export interface UpdateProfileRequest {
+  displayName?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
+}
+
 export interface UserProfile extends UserSummary {
   bio: string | null;
   createdAt: string;

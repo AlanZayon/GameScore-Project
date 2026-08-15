@@ -4,12 +4,27 @@ export interface RegisterRequest {
   email: string;
   username: string;
   password: string;
+  displayName?: string;
 }
 
 export interface LoginRequest {
   /** Email or username. */
   identifier: string;
   password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /**

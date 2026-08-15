@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import type { CursorPaginatedResponse, ReviewDto, UserProfile } from '@gamescore/types';
+import type { AuthenticatedUser, CursorPaginatedResponse, ReviewDto, UpdateProfileRequest, UserProfile } from '@gamescore/types';
 
 import { clampLimit, cursorMeta, DEFAULT_CURSOR_SIZE } from '../../../common/http/pagination';
-import { NotFoundError } from '../../../common/errors/app.exception';
+import { BadRequestError, NotFoundError } from '../../../common/errors/app.exception';
 import { ERROR_CODES } from '../../../common/errors/error-codes';
 import { PrismaService } from '../../../common/prisma/prisma.service';
-import { toUserProfile } from '../mappers/user.mapper';
+import { toAuthenticatedUser, toUserProfile } from '../mappers/user.mapper';
 import { UserRepository } from '../repositories/user.repository';
 import { ReviewRepository } from '../../reviews/repositories/review.repository';
 import { toReviewDto } from '../../reviews/mappers/review.mapper';
@@ -92,4 +92,35 @@ export class UsersService {
       meta: cursorMeta(pageSize, nextCursor),
     };
   }
+
+  async updateMe(userId: string, input: UpdateProfileRequest): Promise<AuthenticatedUser> {
+    const displayName =
+      input.displayName === undefined ? undefined : emptyToNull(input.displayName);
+    const bio = input.bio === undefined ? undefined : emptyToNull(input.bio);
+    const avatarUrl =
+      input.avatarUrl === undefined ? undefined : this.normaliseAvatarUrl(input.avatarUrl);
+
+    const updated = await this.users.updateProfile(userId, { displayName, bio, avatarUrl });
+    return toAuthenticatedUser(updated);
+  }
+
+  private normaliseAvatarUrl(value: string | null): string | null {
+    const trimmed = value?.trim() ?? '';
+    if (!trimmed) return null;
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== 'https:') {
+        throw new BadRequestError(ERROR_CODES.INVALID_AVATAR_URL, 'Avatar URL must be https');
+      }
+      return parsed.toString();
+    } catch (error) {
+      if (error instanceof BadRequestError) throw error;
+      throw new BadRequestError(ERROR_CODES.INVALID_AVATAR_URL, 'Avatar URL is not valid');
+    }
+  }
+}
+
+function emptyToNull(value: string | null): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed.length === 0 ? null : trimmed;
 }

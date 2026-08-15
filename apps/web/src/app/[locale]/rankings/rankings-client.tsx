@@ -4,7 +4,7 @@ import type { RankingResponseDto } from '@gamescore/types';
 import { useTranslations } from 'next-intl';
 
 import { GameCard } from '@/components/game/game-card';
-import { EmptyState, Tabs } from '@/components/ui/misc';
+import { EmptyState, ErrorState, Tabs } from '@/components/ui/misc';
 import { usePathname, useRouter } from '@/i18n/navigation';
 
 import { RANKING_TABS, type RankingTabId } from './ranking-tabs';
@@ -12,11 +12,14 @@ import { RANKING_TABS, type RankingTabId } from './ranking-tabs';
 export function RankingsClient({
   tab,
   initial,
+  failed,
 }: {
   tab: RankingTabId;
   initial: RankingResponseDto | null;
+  failed?: boolean;
 }) {
   const t = useTranslations('rankings');
+  const common = useTranslations('common');
   const router = useRouter();
   const pathname = usePathname();
 
@@ -27,7 +30,12 @@ export function RankingsClient({
         value={tab}
         onChange={(id) => router.replace(`${pathname}?tab=${id}`)}
       />
-      {!initial || initial.entries.length === 0 ? (
+      {initial?.minimumReviews ? (
+        <p className="text-sm text-content-muted">{t('minimumReviews', { count: initial.minimumReviews })}</p>
+      ) : null}
+      {failed ? (
+        <ErrorState title={common('errorTitle')} />
+      ) : !initial || initial.entries.length === 0 ? (
         <EmptyState title={t('empty')} />
       ) : (
         <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

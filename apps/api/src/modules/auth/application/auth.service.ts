@@ -1,7 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import type { AuthSessionResponse, AuthenticatedUser } from '@gamescore/types';
 
 import { AppConfigService } from '../../../common/config/app-config.service';
+import { sha256 } from '../../../common/crypto/hash';
+import { EMAIL_PORT, type EmailPort } from '../../../common/email/email.port';
 import {
   ConflictError,
   ForbiddenError,
@@ -9,6 +12,7 @@ import {
   UnauthorizedError,
 } from '../../../common/errors/app.exception';
 import { ERROR_CODES } from '../../../common/errors/error-codes';
+import { PrismaService } from '../../../common/prisma/prisma.service';
 import { toAuthenticatedUser } from '../../users/mappers/user.mapper';
 import {
   UserRepository,
@@ -46,6 +50,8 @@ export class AuthService {
     private readonly hasher: PasswordHasher,
     private readonly tokens: TokenService,
     private readonly config: AppConfigService,
+    private readonly prisma: PrismaService,
+    @Inject(EMAIL_PORT) private readonly email: EmailPort,
   ) {}
 
   async register(input: RegisterInput, userAgent?: string): Promise<AuthResult> {
@@ -154,6 +160,69 @@ export class AuthService {
       throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND, 'Account not found');
     }
     return toAuthenticatedUser(user);
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.users.findCredentialsById(userId);
+    if (!user) {
+      throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND, 'Account not found');
+    }
+    const matches = await this.hasher.verify(user.passwordHash, currentPassword);
+    if (!matches) {
+      throw new UnauthorizedError(ERROR_CODES.CURRENT_PASSWORD_INVALID, 'Current password is wrong');
+    }
+    await this.users.updatePasswordHash(userId, await this.hasher.hash(newPassword));
+    await this.tokens.revokeAllForUser(userId);
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.users.findCredentialsByEmail(email.trim().toLowerCase());
+    if (!user || user.deletedAt !== null) {
+      await this.hasher.verify(await this.getDecoyHash(), 'gamescore-decoy-password');
+      return;
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash: sha256(token), expiresAt },
+    });
+
+    const resetUrl = `${this.config.webUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
+    await this.email.send({
+      to: user.email,
+      subject: 'GameScore password reset',
+      text: `Reset your GameScore password with this link (valid for one hour):\n${resetUrl}\n`,
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const stored = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: sha256(token) },
+    });
+    if (!stored || stored.usedAt) {
+      throw new UnauthorizedError(ERROR_CODES.INVALID_RESET_TOKEN, 'Reset token is not valid');
+    }
+    if (stored.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedError(ERROR_CODES.RESET_TOKEN_EXPIRED, 'Reset token has expired');
+    }
+
+    const passwordHash = await this.hasher.hash(newPassword);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passwordResetToken.update({
+        where: { id: stored.id },
+        data: { usedAt: new Date() },
+      });
+      await tx.user.update({
+        where: { id: stored.userId },
+        data: { passwordHash },
+      });
+    });
+    await this.tokens.revokeAllForUser(stored.userId);
   }
 
   private async buildSession(

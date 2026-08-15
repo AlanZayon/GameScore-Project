@@ -41,6 +41,7 @@ export function CatalogClient({
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3">
         <select
+          aria-label={t('allPlatforms')}
           className="rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
           value={filters.platform ?? ''}
           onChange={(event) => update({ platform: event.target.value, page: '1' })}
@@ -53,6 +54,7 @@ export function CatalogClient({
           ))}
         </select>
         <select
+          aria-label={t('allGenres')}
           className="rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
           value={filters.genre ?? ''}
           onChange={(event) => update({ genre: event.target.value, page: '1' })}
@@ -65,6 +67,7 @@ export function CatalogClient({
           ))}
         </select>
         <select
+          aria-label={t('sort.POPULAR')}
           className="rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
           value={filters.sort ?? 'POPULAR'}
           onChange={(event) => update({ sort: event.target.value, page: '1' })}

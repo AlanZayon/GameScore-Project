@@ -15,6 +15,9 @@ Every error is `{ code, message }` plus an optional `details` map and `requestId
 | POST | `/auth/refresh` | Rotates the refresh cookie |
 | POST | `/auth/logout` | Revokes the current refresh token |
 | GET | `/auth/me` | Bearer access token |
+| POST | `/auth/password` | Change password while signed in |
+| POST | `/auth/forgot-password` | Always 204; never reveals whether the email exists |
+| POST | `/auth/reset-password` | Consumes a one-hour token |
 
 Replaying a rotated refresh token revokes **every** session for that account.
 
@@ -35,7 +38,7 @@ Top rated orders by `confidenceScore` and requires `RANKING_MINIMUM_REVIEWS`.
 
 ## Users
 
-`GET /users/:username`, `GET /users/:username/reviews`
+`GET /users/:username`, `GET /users/:username/reviews`, `PATCH /users/me`
 
 ## Admin
 

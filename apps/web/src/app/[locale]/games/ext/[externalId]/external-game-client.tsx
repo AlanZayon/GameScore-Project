@@ -10,8 +10,8 @@ import { ScorePanel } from '@/components/game/score-panel';
 import { GameCover } from '@/components/game/game-cover';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/misc';
-import { Link, useRouter } from '@/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { loginPath } from '@/lib/safe-next';
 
 const EMPTY_SCORE: GameScoreDto = {
   totalReviews: 0,
@@ -42,6 +42,7 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
   const reviewsT = useTranslations('reviews');
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const platforms = useMemo(() => previewPlatforms(preview), [preview]);
 
   return (
@@ -69,38 +70,31 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
               ))}
             </div>
             <p className="text-sm text-content-subtle">
-              {[
-                preview.developer,
-                preview.publisher,
-                preview.releaseDate?.slice(0, 4),
-              ]
+              {[preview.developer, preview.publisher, preview.releaseDate?.slice(0, 4)]
                 .filter(Boolean)
                 .join(' · ')}
             </p>
           </div>
         </div>
 
+        <p className="text-sm text-content-muted">{t('importCta')}</p>
+
         {user ? (
           <ReviewForm
             externalId={preview.externalId}
             platforms={platforms}
-            onCreated={(review) => {
+            onSaved={(review) => {
               router.replace(`/games/${review.game.slug}`);
               router.refresh();
             }}
           />
         ) : (
           <p className="text-sm text-content-muted">
-            <Link href="/login" className="text-brand underline">
+            <Link href={loginPath(pathname)} className="text-brand underline">
               {reviewsT('loginToReview')}
             </Link>
           </p>
         )}
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">{t('reviews')}</h2>
-          <EmptyState title={t('noReviews')} />
-        </section>
       </div>
 
       <aside className="space-y-4">

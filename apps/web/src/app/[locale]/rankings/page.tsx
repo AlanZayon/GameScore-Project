@@ -20,10 +20,11 @@ export default async function RankingsPage({
   const path = RANKING_TABS.find((item) => item.id === tab)!.path;
 
   let data: RankingResponseDto | null = null;
+  let failed = false;
   try {
     data = await apiFetch<RankingResponseDto>(path);
   } catch {
-    // Rankings stay empty when the API is unreachable on first paint.
+    failed = true;
   }
 
   return (
@@ -32,7 +33,7 @@ export default async function RankingsPage({
         <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="mt-1 text-content-muted">{t('subtitle')}</p>
       </div>
-      <RankingsClient tab={tab} initial={data} />
+      <RankingsClient tab={tab} initial={data} failed={failed} />
     </main>
   );
 }

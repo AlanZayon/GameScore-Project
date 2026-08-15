@@ -2,7 +2,7 @@
 
 import type { AutocompleteItemDto } from '@gamescore/types';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { GameCover } from '@/components/game/game-cover';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -15,26 +15,43 @@ function suggestionHref(item: AutocompleteItemDto): string {
   return '/search';
 }
 
-export function SearchBox({ className }: { className?: string }) {
+export function SearchBox({
+  className,
+  initialQuery = '',
+}: {
+  className?: string;
+  initialQuery?: string;
+}) {
   const t = useTranslations('nav');
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const listId = useId();
+  const [query, setQuery] = useState(initialQuery);
   const [items, setItems] = useState<AutocompleteItemDto[]>([]);
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
+  useEffect(() => {
     if (query.trim().length < 2) {
+      setItems([]);
+      setActive(-1);
       return;
     }
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
-      void apiFetch<AutocompleteItemDto[]>(`/search/autocomplete${qs({ q: query, limit: 8 })}`).then(
-        (result) => {
+      void apiFetch<AutocompleteItemDto[]>(`/search/autocomplete${qs({ q: query, limit: 8 })}`)
+        .then((result) => {
           setItems(result);
-          setOpen(true);
-        },
-      );
+          setOpen(result.length > 0);
+          setActive(-1);
+        })
+        .catch(() => {
+          setItems([]);
+        });
     }, 220);
     return () => {
       if (timer.current) window.clearTimeout(timer.current);
@@ -43,11 +60,20 @@ export function SearchBox({ className }: { className?: string }) {
 
   const suggestions = query.trim().length < 2 ? [] : items;
 
+  function goTo(item: AutocompleteItemDto) {
+    setOpen(false);
+    router.push(suggestionHref(item));
+  }
+
   return (
     <form
       className={`relative ${className ?? ''}`}
       onSubmit={(event) => {
         event.preventDefault();
+        if (active >= 0 && suggestions[active]) {
+          goTo(suggestions[active]);
+          return;
+        }
         if (query.trim()) {
           setOpen(false);
           router.push(`/search?q=${encodeURIComponent(query.trim())}`);
@@ -59,16 +85,38 @@ export function SearchBox({ className }: { className?: string }) {
         onChange={(event) => setQuery(event.target.value)}
         placeholder={t('searchPlaceholder')}
         aria-label={t('search')}
+        role="combobox"
+        aria-expanded={open && suggestions.length > 0}
+        aria-controls={listId}
+        aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
+        autoComplete="off"
         onFocus={() => suggestions.length > 0 && setOpen(true)}
         onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(event) => {
+          if (!open || suggestions.length === 0) return;
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setActive((value) => (value + 1) % suggestions.length);
+          }
+          if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setActive((value) => (value <= 0 ? suggestions.length - 1 : value - 1));
+          }
+        }}
       />
       {open && suggestions.length > 0 ? (
-        <ul className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-raised shadow-lg">
-          {suggestions.map((item) => (
-            <li key={item.id}>
+        <ul
+          id={listId}
+          role="listbox"
+          className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-raised shadow-lg"
+        >
+          {suggestions.map((item, index) => (
+            <li key={item.id} role="option" aria-selected={index === active} id={`${listId}-${index}`}>
               <Link
                 href={suggestionHref(item)}
-                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-surface-hover"
+                className={`flex items-center gap-3 px-3 py-2 text-sm hover:bg-surface-hover ${
+                  index === active ? 'bg-surface-hover' : ''
+                }`}
                 onClick={() => setOpen(false)}
               >
                 <GameCover

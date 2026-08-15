@@ -160,6 +160,7 @@ model User {
   reviewsDeleted       Review[]            @relation("ReviewDeletedBy")
   reviewBombsReviewed  ReviewBombEvent[]
   auditLogs            AuditLog[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([reputationScore(sort: Desc)])
   @@index([createdAt])
@@ -185,6 +186,21 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique @db.VarChar(128)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 // ---------------------------------------------------------------------------

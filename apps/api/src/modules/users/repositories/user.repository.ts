@@ -174,4 +174,26 @@ export class UserRepository {
       data: { status: 'ACTIVE', suspendedUntil: null, suspensionReason: null },
     });
   }
+
+  async updateProfile(
+    id: string,
+    data: { displayName?: string | null; bio?: string | null; avatarUrl?: string | null },
+  ): Promise<AccountUser> {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
+        ...(data.bio !== undefined ? { bio: data.bio } : {}),
+        ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
+      },
+      select: accountSelect,
+    });
+  }
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+  }
 }

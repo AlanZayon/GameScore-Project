@@ -161,6 +161,7 @@
   },
   "admin": {
     "title": "Admin",
+    "subtitle": "Moderation queues, reports, and admin tools.",
     "imported": "Game imported.",
     "importFailed": "Import failed. Check IGDB credentials.",
     "resolved": "Report resolved.",
@@ -172,15 +173,64 @@
     "remove": "Remove",
     "suspend": "Suspend",
     "reinstate": "Reinstate",
+    "reinstated": "User reinstated.",
+    "suspended": "User suspended.",
     "import": "Import",
     "importHelp": "Paste a numeric IGDB id. Import stays off until credentials are set.",
+    "importByIdTitle": "Import by IGDB id",
+    "importByNameTitle": "Import by name",
+    "importByNameHelp": "Finds the best IGDB match and imports it (idempotent if already present).",
+    "importByName": "Search and import",
+    "importIdLabel": "IGDB id",
+    "importNameLabel": "Game name",
+    "importCreated": "Added to catalogue",
+    "importExisting": "Already in catalogue",
     "empty": "Nothing in this queue.",
+    "emptyReports": "No reports with this status.",
     "restored": "Review restored.",
     "restore": "Restore",
     "saved": "Game updated.",
+    "synced": "Game synced from IGDB.",
+    "sync": "Sync IGDB",
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
+    "search": "Search",
+    "searchGames": "Search games…",
+    "searchUsers": "Search by username or email…",
+    "loadError": "Could not load this queue.",
+    "igdbOn": "IGDB configured",
+    "igdbOff": "IGDB not configured",
+    "auditTitle": "Recent activity",
+    "auditEmpty": "No admin actions yet.",
+    "reportedBy": "Reported by",
+    "reviewBy": "review by",
+    "reportDetails": "Details",
+    "expand": "Show more",
+    "collapse": "Show less",
+    "resolutionNotePlaceholder": "Optional resolution note…",
+    "confirmResolveHideTitle": "Resolve and hide review?",
+    "confirmResolveHideBody": "The report will be marked resolved and the review will be hidden.",
+    "confirmDismissTitle": "Dismiss report?",
+    "confirmDismissBody": "The report will be closed without hiding the review.",
+    "confirmRemoveTitle": "Hide review?",
+    "confirmRemoveBody": "The review will be removed from public view.",
+    "confirmBombTitle": "Confirm review bomb?",
+    "confirmBombBody": "The event will be confirmed and may affect game statistics.",
+    "dismissBombTitle": "Dismiss review bomb?",
+    "dismissBombBody": "The event will be marked as a false positive.",
+    "confirmSuspendTitle": "Suspend user?",
+    "confirmSuspendBody": "The account will lose access until reinstated.",
+    "bombConfirmed": "Review bomb confirmed.",
+    "bombDismissed": "Review bomb dismissed.",
+    "severity": "Severity",
+    "bombWindow": "Window {start} – {end}",
+    "bombCounts": "+{positive} / −{negative} · baseline {baseline}/day",
+    "roleUpdated": "Role updated.",
+    "userStats": "{reviews} reviews · {reports} reports",
+    "pagination": {
+      "total": "{count, plural, one {# item} other {# items}}"
+    },
     "tabs": {
       "dashboard": "Dashboard",
       "reviews": "Reviews",
@@ -189,6 +239,71 @@
       "games": "Games",
       "users": "Users",
       "import": "Import"
+    },
+    "kpis": {
+      "games": "Games",
+      "users": "Users",
+      "reviews": "Reviews",
+      "hiddenReviews": "Hidden reviews",
+      "pendingReports": "Pending reports",
+      "openReviewBombEvents": "Open review bombs",
+      "suspendedUsers": "Suspended users"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "RESOLVED": "Resolved",
+      "DISMISSED": "Dismissed"
+    },
+    "reasons": {
+      "SPAM": "Spam",
+      "ABUSE": "Abuse",
+      "OFF_TOPIC": "Off topic",
+      "FAKE_REVIEW": "Fake review",
+      "HARASSMENT": "Harassment",
+      "OTHER": "Other"
+    },
+    "reviewFilters": {
+      "all": "All",
+      "hidden": "Hidden"
+    },
+    "reviewStatus": {
+      "PUBLISHED": "Published",
+      "HIDDEN": "Hidden"
+    },
+    "moderation": {
+      "NORMAL": "Normal",
+      "SUSPICIOUS": "Suspicious",
+      "REVIEW_BOMB": "Review bomb",
+      "MODERATION_REQUIRED": "Needs moderation"
+    },
+    "bombStatus": {
+      "all": "All",
+      "DETECTED": "Detected",
+      "CONFIRMED": "Confirmed",
+      "DISMISSED": "Dismissed"
+    },
+    "roles": {
+      "USER": "Player",
+      "MODERATOR": "Moderator",
+      "ADMIN": "Admin"
+    },
+    "userStatus": {
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended"
+    },
+    "auditActions": {
+      "ADMIN_DELETED_REVIEW": "Review removed",
+      "ADMIN_RESTORED_REVIEW": "Review restored",
+      "ADMIN_UPDATED_REVIEW_MODERATION": "Moderation updated",
+      "ADMIN_SUSPENDED_USER": "User suspended",
+      "ADMIN_REINSTATED_USER": "User reinstated",
+      "ADMIN_UPDATED_USER_ROLE": "Role changed",
+      "ADMIN_IMPORTED_GAME": "Game imported",
+      "ADMIN_SYNCED_GAME": "Game synced",
+      "ADMIN_UPDATED_GAME": "Game edited",
+      "ADMIN_RESOLVED_REPORT": "Report resolved",
+      "ADMIN_UPDATED_REVIEW_BOMB_EVENT": "Review bomb updated",
+      "ADMIN_RECALCULATED_GAME_SCORE": "Score recalculated"
     }
   },
   "errors": {

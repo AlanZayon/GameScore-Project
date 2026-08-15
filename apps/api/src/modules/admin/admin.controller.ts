@@ -194,8 +194,8 @@ export class AdminController {
   }
 
   @Get('users')
-  @RequireRoles('ADMIN')
-  @ApiOperation({ summary: 'List users' })
+  @RequireRoles('MODERATOR')
+  @ApiOperation({ summary: 'List users (moderators can list; role changes remain admin-only on PATCH)' })
   listUsers(@Query() query: AdminPageQueryDto): Promise<PaginatedResponse<AdminUserDto>> {
     return this.admin.listUsers(query.page, query.limit, query.q);
   }

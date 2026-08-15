@@ -8,13 +8,22 @@ import {
 import type { ReactNode } from 'react';
 
 function onIntlError(error: IntlError) {
-  // Stale Turbopack message modules can briefly miss new keys; don't crash the tree.
-  if (error.code === 'MISSING_MESSAGE') return;
+  if (error.code === 'MISSING_MESSAGE') {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[i18n] ${error.message}`);
+    }
+    return;
+  }
   console.error(error);
 }
 
-function messageFallback({ namespace, key }: { namespace?: string; key: string }) {
-  return namespace ? `${namespace}.${key}` : key;
+/** Prefer a readable fragment over "namespace.key" when a message is briefly missing. */
+function messageFallback({ key }: { namespace?: string; key: string }) {
+  const leaf = key.includes('.') ? key.slice(key.lastIndexOf('.') + 1) : key;
+  return leaf
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .trim();
 }
 
 export function IntlProvider({

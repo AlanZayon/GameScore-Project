@@ -161,6 +161,7 @@
   },
   "admin": {
     "title": "Administração",
+    "subtitle": "Filas de moderação, denúncias e ferramentas administrativas.",
     "imported": "Jogo importado.",
     "importFailed": "Falha ao importar. Confira as credenciais IGDB.",
     "resolved": "Denúncia resolvida.",
@@ -172,15 +173,64 @@
     "remove": "Remover",
     "suspend": "Suspender",
     "reinstate": "Reativar",
+    "reinstated": "Usuário reativado.",
+    "suspended": "Usuário suspenso.",
     "import": "Importar",
     "importHelp": "Cole um ID numérico do IGDB. Sem credenciais, a importação permanece desligada.",
+    "importByIdTitle": "Importar por ID do IGDB",
+    "importByNameTitle": "Importar pelo nome",
+    "importByNameHelp": "Busca o melhor resultado no IGDB e importa (idempotente se já existir).",
+    "importByName": "Buscar e importar",
+    "importIdLabel": "ID IGDB",
+    "importNameLabel": "Nome do jogo",
+    "importCreated": "Novo no catálogo",
+    "importExisting": "Já estava no catálogo",
     "empty": "Nada nesta fila.",
+    "emptyReports": "Não há denúncias com este status.",
     "restored": "Avaliação restaurada.",
     "restore": "Restaurar",
     "saved": "Jogo atualizado.",
+    "synced": "Jogo sincronizado com o IGDB.",
+    "sync": "Sincronizar IGDB",
     "save": "Salvar",
     "cancel": "Cancelar",
     "edit": "Editar",
+    "search": "Buscar",
+    "searchGames": "Buscar jogos…",
+    "searchUsers": "Buscar por usuário ou e-mail…",
+    "loadError": "Não foi possível carregar esta fila.",
+    "igdbOn": "IGDB configurado",
+    "igdbOff": "IGDB não configurado",
+    "auditTitle": "Atividade recente",
+    "auditEmpty": "Nenhuma ação registrada ainda.",
+    "reportedBy": "Denunciado por",
+    "reviewBy": "avaliação de",
+    "reportDetails": "Detalhes",
+    "expand": "Ver mais",
+    "collapse": "Ver menos",
+    "resolutionNotePlaceholder": "Nota opcional da resolução…",
+    "confirmResolveHideTitle": "Resolver e ocultar avaliação?",
+    "confirmResolveHideBody": "A denúncia será marcada como resolvida e a avaliação ficará oculta.",
+    "confirmDismissTitle": "Dispensar denúncia?",
+    "confirmDismissBody": "A denúncia será fechada sem ocultar a avaliação.",
+    "confirmRemoveTitle": "Ocultar avaliação?",
+    "confirmRemoveBody": "A avaliação será removida da visão pública.",
+    "confirmBombTitle": "Confirmar review bomb?",
+    "confirmBombBody": "O evento será confirmado e pode afetar estatísticas do jogo.",
+    "dismissBombTitle": "Dispensar review bomb?",
+    "dismissBombBody": "O evento será marcado como falso positivo.",
+    "confirmSuspendTitle": "Suspender usuário?",
+    "confirmSuspendBody": "A conta perderá acesso até ser reativada.",
+    "bombConfirmed": "Review bomb confirmado.",
+    "bombDismissed": "Review bomb dispensado.",
+    "severity": "Severidade",
+    "bombWindow": "Janela {start} – {end}",
+    "bombCounts": "+{positive} / −{negative} · baseline {baseline}/dia",
+    "roleUpdated": "Papel atualizado.",
+    "userStats": "{reviews} avaliações · {reports} denúncias",
+    "pagination": {
+      "total": "{count, plural, one {# item} other {# itens}}"
+    },
     "tabs": {
       "dashboard": "Painel",
       "reviews": "Avaliações",
@@ -189,6 +239,71 @@
       "games": "Jogos",
       "users": "Usuários",
       "import": "Importar"
+    },
+    "kpis": {
+      "games": "Jogos",
+      "users": "Usuários",
+      "reviews": "Avaliações",
+      "hiddenReviews": "Avaliações ocultas",
+      "pendingReports": "Denúncias pendentes",
+      "openReviewBombEvents": "Review bombs abertos",
+      "suspendedUsers": "Usuários suspensos"
+    },
+    "status": {
+      "PENDING": "Pendente",
+      "RESOLVED": "Resolvida",
+      "DISMISSED": "Dispensada"
+    },
+    "reasons": {
+      "SPAM": "Spam",
+      "ABUSE": "Abuso",
+      "OFF_TOPIC": "Fora do assunto",
+      "FAKE_REVIEW": "Avaliação falsa",
+      "HARASSMENT": "Assédio",
+      "OTHER": "Outro"
+    },
+    "reviewFilters": {
+      "all": "Todas",
+      "hidden": "Ocultas"
+    },
+    "reviewStatus": {
+      "PUBLISHED": "Publicada",
+      "HIDDEN": "Oculta"
+    },
+    "moderation": {
+      "NORMAL": "Normal",
+      "SUSPICIOUS": "Suspeita",
+      "REVIEW_BOMB": "Review bomb",
+      "MODERATION_REQUIRED": "Requer moderação"
+    },
+    "bombStatus": {
+      "all": "Todas",
+      "DETECTED": "Detectadas",
+      "CONFIRMED": "Confirmadas",
+      "DISMISSED": "Dispensadas"
+    },
+    "roles": {
+      "USER": "Jogador",
+      "MODERATOR": "Moderador",
+      "ADMIN": "Admin"
+    },
+    "userStatus": {
+      "ACTIVE": "Ativo",
+      "SUSPENDED": "Suspenso"
+    },
+    "auditActions": {
+      "ADMIN_DELETED_REVIEW": "Avaliação removida",
+      "ADMIN_RESTORED_REVIEW": "Avaliação restaurada",
+      "ADMIN_UPDATED_REVIEW_MODERATION": "Moderação atualizada",
+      "ADMIN_SUSPENDED_USER": "Usuário suspenso",
+      "ADMIN_REINSTATED_USER": "Usuário reativado",
+      "ADMIN_UPDATED_USER_ROLE": "Papel alterado",
+      "ADMIN_IMPORTED_GAME": "Jogo importado",
+      "ADMIN_SYNCED_GAME": "Jogo sincronizado",
+      "ADMIN_UPDATED_GAME": "Jogo editado",
+      "ADMIN_RESOLVED_REPORT": "Denúncia resolvida",
+      "ADMIN_UPDATED_REVIEW_BOMB_EVENT": "Review bomb atualizado",
+      "ADMIN_RECALCULATED_GAME_SCORE": "Nota recalculada"
     }
   },
   "errors": {

@@ -77,7 +77,7 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 11. Profile page shows reputation and the user's reviews.
 12. Dark theme is the default; the header toggle switches to light and back.
 13. Admin (`admin@gamescore.dev`) can list games, edit a game, remove/restore a review, resolve reports, confirm a review bomb, suspend a user and see the dashboard.
-14. Moderator (`moderator@gamescore.dev`) can moderate reviews/reports but cannot list users or import games.
+14. Moderator (`moderator@gamescore.dev`) can moderate reviews/reports/bombs, list and suspend users, but cannot list games or import from IGDB.
 15. Errors from the API are `{ code, message }`; the UI translates `code` in pt-BR and en.
 16. Swagger is at http://localhost:3001/api/docs.
 17. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e` and `pnpm build` all pass.

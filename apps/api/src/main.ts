@@ -15,14 +15,19 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(app.get(Logger));
   configureApp(app);
-  setupSwagger(app);
 
   const config = app.get(AppConfigService);
+  if (config.enableSwagger) {
+    setupSwagger(app);
+  }
+
   await app.listen(config.port, '0.0.0.0');
 
   const logger = app.get(Logger);
   logger.log(`GameScore API listening on http://localhost:${config.port}`);
-  logger.log(`OpenAPI documentation at http://localhost:${config.port}/api/docs`);
+  if (config.enableSwagger) {
+    logger.log(`OpenAPI documentation at http://localhost:${config.port}/api/docs`);
+  }
 }
 
 void bootstrap();

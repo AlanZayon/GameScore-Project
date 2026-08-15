@@ -53,6 +53,7 @@ export interface AppConfig {
   databaseUrl: string;
   redisUrl: string | null;
   webUrl: string;
+  enableSwagger: boolean;
   jwt: JwtConfig;
   igdb: IgdbConfig;
   ranking: RankingConfig;
@@ -149,6 +150,7 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrl: databaseUrl.value as string,
     redisUrl: env.REDIS_URL?.trim() || null,
     webUrl: env.NEXT_PUBLIC_SITE_URL?.trim() || 'http://localhost:3000',
+    enableSwagger: !isProduction || env.ENABLE_SWAGGER === 'true',
     jwt: {
       accessSecret: accessSecret.value as string,
       refreshSecret: refreshSecret.value as string,

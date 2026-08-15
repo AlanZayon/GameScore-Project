@@ -13,9 +13,21 @@ export class ApiError extends Error {
   }
 }
 
+type AccessTokenRefresher = () => Promise<string | null>;
+
+let accessTokenRefresher: AccessTokenRefresher | null = null;
+
+/** AuthProvider registers a refresher so expired access tokens can rotate in place. */
+export function setAccessTokenRefresher(refresher: AccessTokenRefresher | null): void {
+  accessTokenRefresher = refresher;
+}
+
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
   accessToken?: string | null;
+  /** ISR window in seconds. `false` forces `no-store`. Authenticated calls are never cached. */
+  revalidate?: number | false;
+  _retried?: boolean;
 }
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -30,12 +42,20 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     headers.set('Authorization', `Bearer ${options.accessToken}`);
   }
 
+  const { accessToken: _token, revalidate, _retried, body, ...rest } = options;
+  const skipCache = fromServer && (revalidate === false || Boolean(options.accessToken));
+  const cacheInit: RequestInit & { next?: { revalidate: number } } = skipCache
+    ? { cache: 'no-store' }
+    : fromServer
+      ? { next: { revalidate: typeof revalidate === 'number' ? revalidate : 60 } }
+      : { cache: options.cache };
+
   const response = await fetch(`${base}${path}`, {
-    ...options,
+    ...rest,
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body: body === undefined ? undefined : JSON.stringify(body),
     credentials: 'include',
-    cache: fromServer ? 'no-store' : options.cache,
+    ...cacheInit,
   });
 
   if (response.status === 204) {
@@ -44,6 +64,20 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   const payload = (await response.json().catch(() => null)) as T | ApiErrorResponse | null;
   if (!response.ok) {
+    const shouldRetry =
+      typeof window !== 'undefined' &&
+      !_retried &&
+      response.status === 401 &&
+      Boolean(accessTokenRefresher) &&
+      !path.startsWith('/auth/');
+
+    if (shouldRetry && accessTokenRefresher) {
+      const nextToken = await accessTokenRefresher();
+      if (nextToken) {
+        return apiFetch<T>(path, { ...options, accessToken: nextToken, _retried: true });
+      }
+    }
+
     const error = payload as ApiErrorResponse | null;
     throw new ApiError(
       error?.code ?? 'INTERNAL_ERROR',

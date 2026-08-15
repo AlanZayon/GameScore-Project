@@ -34,7 +34,10 @@ export async function createTestApp(): Promise<TestContext> {
     app,
     prisma,
     jobs,
-    reset: () => prisma.truncateAllTables(),
+    reset: async () => {
+      await jobs.drain();
+      await prisma.truncateAllTables();
+    },
     close: async () => {
       await jobs.drain();
       await app.close();

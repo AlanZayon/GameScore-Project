@@ -9,17 +9,16 @@ import { publicEnv } from '@/lib/env';
 import { redirect } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
 import type { ExternalGamePreviewDto } from '@gamescore/types';
+import { cache } from 'react';
 
-export const dynamic = 'force-dynamic';
-
-async function loadPreview(externalId: string) {
+const loadPreview = cache(async (externalId: string) => {
   try {
     return await apiFetch<ExternalGamePreviewDto>(`/search/external/${externalId}`);
   } catch (error) {
     if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
     throw error;
   }
-}
+});
 
 export async function generateMetadata({
   params,

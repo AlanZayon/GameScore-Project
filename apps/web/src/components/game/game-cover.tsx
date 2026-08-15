@@ -1,9 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 
 import { cn } from '@/lib/cn';
-import { isRemoteCoverUrl } from '@/lib/cover-image';
+import { isOptimizableCoverUrl, isRemoteCoverUrl } from '@/lib/cover-image';
 
 function CoverFallback({ name, className }: { name: string; className?: string }) {
   const initials = name
@@ -32,25 +33,43 @@ export function GameCover({
   src,
   className,
   imgClassName,
+  sizes = '112px',
+  priority = false,
 }: {
   name: string;
   src: string | null | undefined;
   className?: string;
   imgClassName?: string;
+  sizes?: string;
+  priority?: boolean;
 }) {
   const remote = isRemoteCoverUrl(src) ? src : null;
   const [failed, setFailed] = useState(false);
+  const optimizable = remote !== null && isOptimizableCoverUrl(remote);
 
   return (
     <div className={cn('relative overflow-hidden bg-surface-raised', className)}>
       {remote && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={remote}
-          alt=""
-          className={cn('h-full w-full object-cover', imgClassName)}
-          onError={() => setFailed(true)}
-        />
+        optimizable ? (
+          <Image
+            src={remote}
+            alt=""
+            fill
+            sizes={sizes}
+            priority={priority}
+            className={cn('object-cover', imgClassName)}
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={remote}
+            alt=""
+            loading={priority ? 'eager' : 'lazy'}
+            className={cn('h-full w-full object-cover', imgClassName)}
+            onError={() => setFailed(true)}
+          />
+        )
       ) : (
         <CoverFallback name={name} />
       )}

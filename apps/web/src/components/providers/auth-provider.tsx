@@ -3,7 +3,7 @@
 import type { AuthenticatedUser, AuthSessionResponse } from '@gamescore/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { apiFetch, ApiError } from '@/lib/api';
+import { apiFetch, ApiError, setAccessTokenRefresher } from '@/lib/api';
 
 interface AuthContextValue {
   user: AuthenticatedUser | null;
@@ -63,6 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, [applySession]);
+
+  useEffect(() => {
+    setAccessTokenRefresher(async () => {
+      try {
+        const session = await refreshSession();
+        applySession(session);
+        return session.accessToken;
+      } catch {
+        setAccessToken(null);
+        setUser(null);
+        return null;
+      }
+    });
+    return () => setAccessTokenRefresher(null);
   }, [applySession]);
 
   const login = useCallback(

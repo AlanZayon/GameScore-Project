@@ -123,7 +123,11 @@ export class IgdbClient {
       grant_type: 'client_credentials',
     });
 
-    const response = await fetch(`${TOKEN_URL}?${params.toString()}`, { method: 'POST' });
+    const response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
     if (!response.ok) {
       throw new BadRequestError(ERROR_CODES.IGDB_REQUEST_FAILED, 'Could not obtain an IGDB access token');
     }

@@ -65,6 +65,10 @@ export class AppConfigService {
     return this.config.webUrl;
   }
 
+  get enableSwagger(): boolean {
+    return this.config.enableSwagger;
+  }
+
   get jwt(): JwtConfig {
     return this.config.jwt;
   }

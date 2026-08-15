@@ -6,8 +6,6 @@ import { Link } from '@/i18n/navigation';
 import { apiFetch } from '@/lib/api';
 import type { HomeFeedDto } from '@gamescore/types';
 
-export const dynamic = 'force-dynamic';
-
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -65,8 +63,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <EmptyState title={t('emptySection')} />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {section.games.map((game) => (
-                <GameCard key={game.id} game={game} />
+              {section.games.map((game, index) => (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  priority={section.key === 'popular' && index === 0}
+                />
               ))}
             </div>
           )}

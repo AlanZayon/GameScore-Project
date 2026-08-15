@@ -4,8 +4,6 @@ import { CatalogClient } from './catalog-client';
 import { apiFetch, qs } from '@/lib/api';
 import type { GenreDto, PaginatedResponse, PlatformDto, GameSummaryDto } from '@gamescore/types';
 
-export const dynamic = 'force-dynamic';
-
 export default async function GamesPage({
   params,
   searchParams,

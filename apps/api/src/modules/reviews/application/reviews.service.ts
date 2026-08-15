@@ -180,6 +180,7 @@ export class ReviewsService {
       gameId,
       date: isoDate(created.createdAt),
     });
+    await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
 
     const [mapped] = await this.withViewerContext([created], author.id);
@@ -208,6 +209,14 @@ export class ReviewsService {
 
     const nextText = input.text?.trim() ?? review.text;
     const fingerprint = reviewFingerprint(nextText);
+    const spam = await this.antiSpam.inspect({
+      userId: actor.id,
+      text: nextText,
+      fingerprint,
+      ipHash: review.authorIpHash,
+      skipRateLimits: true,
+      excludeReviewId: review.id,
+    });
     const rankingScore = this.ranking.score({
       usefulVotes: review.usefulCount,
       notUsefulVotes: review.notUsefulCount,
@@ -233,6 +242,7 @@ export class ReviewsService {
           edited: true,
           textFingerprint: fingerprint,
           rankingScore,
+          moderationStatus: spam.moderationStatus,
         },
         tx,
       );
@@ -246,6 +256,7 @@ export class ReviewsService {
       return saved;
     });
 
+    await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
     const [mapped] = await this.withViewerContext([updated], actor.id);
     return mapped!;
@@ -254,8 +265,7 @@ export class ReviewsService {
   async softDelete(id: string, actor: AuthUser, reason?: string): Promise<void> {
     const review = await this.requireReview(id);
     const isOwner = review.userId === actor.id;
-    const isStaff = actor.role === 'MODERATOR' || actor.role === 'ADMIN';
-    if (!isOwner && !isStaff) {
+    if (!isOwner) {
       throw new ForbiddenError(ERROR_CODES.REVIEW_NOT_OWNED, 'You can only delete your own review');
     }
     if (review.deletedAt) {
@@ -268,7 +278,7 @@ export class ReviewsService {
         {
           deletedAt: new Date(),
           deletedById: actor.id,
-          deletionReason: reason ?? (isOwner ? 'Deleted by author' : 'Removed by moderator'),
+          deletionReason: reason ?? 'Deleted by author',
           status: 'HIDDEN',
         },
         tx,
@@ -276,7 +286,7 @@ export class ReviewsService {
 
       await this.reputation.apply(
         review.userId,
-        isOwner ? 'REVIEW_DELETED' : 'REVIEW_REMOVED_BY_MODERATOR',
+        'REVIEW_DELETED',
         { type: 'review', id: review.id },
         tx,
       );
@@ -284,6 +294,7 @@ export class ReviewsService {
       await this.scores.recalculate(review.gameId, tx);
     });
 
+    await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
   }
 

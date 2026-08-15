@@ -125,6 +125,10 @@ function mulberry32(seed: number): () => number {
 }
 
 async function main(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Refusing to seed a production database.');
+  }
+
   console.log('Seeding GameScore…');
   const passwordHash = await hash(PASSWORD, ARGON);
   const rng = mulberry32(20260813);
@@ -168,7 +172,7 @@ async function main(): Promise<void> {
   for (const account of [...staff, ...players]) {
     const user = await prisma.user.upsert({
       where: { email: account.email },
-      update: { role: account.role, displayName: account.displayName, passwordHash },
+      update: { role: account.role, displayName: account.displayName },
       create: { ...account, passwordHash, reputationScore: 20 },
     });
     users.push(user);

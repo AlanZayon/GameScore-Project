@@ -1,47 +1,30 @@
-'use client';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import type { RankingResponseDto } from '@gamescore/types';
-import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
-
-import { GameCard } from '@/components/game/game-card';
-import { EmptyState, Tabs } from '@/components/ui/misc';
-import { GameCardGridSkeleton } from '@/components/ui/skeletons';
+import { RankingsClient } from './rankings-client';
+import { RANKING_TABS, resolveRankingTab } from './ranking-tabs';
 import { apiFetch } from '@/lib/api';
+import type { RankingResponseDto } from '@gamescore/types';
 
-const TABS = [
-  { id: 'top-rated', path: '/rankings/top-rated' },
-  { id: 'trending', path: '/rankings/trending' },
-  { id: 'new-releases', path: '/rankings/new-releases' },
-  { id: 'popular', path: '/rankings/popular' },
-];
+export default async function RankingsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { locale } = await params;
+  const query = await searchParams;
+  setRequestLocale(locale);
+  const t = await getTranslations('rankings');
+  const tab = resolveRankingTab(query.tab);
+  const path = RANKING_TABS.find((item) => item.id === tab)!.path;
 
-export default function RankingsPage() {
-  const t = useTranslations('rankings');
-  const [tab, setTab] = useState('top-rated');
-  const [data, setData] = useState<RankingResponseDto | null>(null);
-  const [loadedTab, setLoadedTab] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    const current = TABS.find((item) => item.id === tab)!;
-    let cancelled = false;
-    setError(false);
-    void apiFetch<RankingResponseDto>(current.path)
-      .then((result) => {
-        if (cancelled) return;
-        setData(result);
-        setLoadedTab(tab);
-      })
-      .catch(() => {
-        if (!cancelled) setError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tab]);
-
-  const loading = loadedTab !== tab;
+  let data: RankingResponseDto | null = null;
+  try {
+    data = await apiFetch<RankingResponseDto>(path);
+  } catch {
+    // Rankings stay empty when the API is unreachable on first paint.
+  }
 
   return (
     <main className="container-page space-y-6 py-10">
@@ -49,29 +32,7 @@ export default function RankingsPage() {
         <h1 className="text-3xl font-bold">{t('title')}</h1>
         <p className="mt-1 text-content-muted">{t('subtitle')}</p>
       </div>
-      <Tabs
-        tabs={TABS.map((item) => ({ id: item.id, label: t(`tabs.${item.id}`) }))}
-        value={tab}
-        onChange={setTab}
-      />
-      {error ? (
-        <EmptyState title={t('empty')} />
-      ) : loading || !data ? (
-        <GameCardGridSkeleton count={6} columns="rankings" />
-      ) : data.entries.length === 0 ? (
-        <EmptyState title={t('empty')} />
-      ) : (
-        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.entries.map((entry) => (
-            <li key={entry.game.id} className="relative">
-              <span className="absolute left-2 top-2 z-10 rounded-full bg-canvas/80 px-2 py-0.5 text-xs font-semibold">
-                #{entry.position}
-              </span>
-              <GameCard game={entry.game} />
-            </li>
-          ))}
-        </ol>
-      )}
+      <RankingsClient tab={tab} initial={data} />
     </main>
   );
 }

@@ -107,6 +107,22 @@ describe('Reviews (integration)', () => {
       .expect(201);
   });
 
+  it('rejects a spammy edit of an otherwise clean review', async () => {
+    const token = await register('alice');
+    const created = await http
+      .post('/games/test-game/reviews')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...reviewBody, platformId })
+      .expect(201);
+
+    const spam = await http
+      .patch(`/reviews/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ text: 'aaaa aaaa aaaa aaaa aaaa aaaa aaaa aaaa' })
+      .expect(400);
+    expect(spam.body.code).toBe('REVIEW_REJECTED_AS_SPAM');
+  });
+
   it('records helpfulness votes, forbids self-voting and unique-votes a user', async () => {
     const author = await register('author');
     const voter = await register('voter');

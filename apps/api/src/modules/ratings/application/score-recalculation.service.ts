@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { calculateGameScore } from '@gamescore/shared';
 
 import { AppConfigService } from '../../../common/config/app-config.service';
@@ -13,6 +13,7 @@ import { PrismaService, type PrismaTransaction } from '../../../common/prisma/pr
 
 const RANKINGS_CACHE_PREFIX = 'rankings:';
 const HOME_CACHE_KEY = 'home:feed';
+const INVALIDATE_DEBOUNCE_MS = 8_000;
 
 interface ReviewAggregate {
   total: number;
@@ -28,8 +29,10 @@ interface ReviewAggregate {
  * truth; this service is the only writer of GameStatistics rows.
  */
 @Injectable()
-export class ScoreRecalculationService implements OnModuleInit {
+export class ScoreRecalculationService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ScoreRecalculationService.name);
+  private invalidateTimer: ReturnType<typeof setTimeout> | null = null;
+  private invalidateInFlight: Promise<void> | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -42,23 +45,33 @@ export class ScoreRecalculationService implements OnModuleInit {
     this.jobs.register<RecalculateGameScorePayload>(JOB_NAMES.RECALCULATE_GAME_SCORE, (payload) =>
       this.recalculate(payload.gameId),
     );
-    this.jobs.register(JOB_NAMES.INVALIDATE_RANKINGS, async () => {
-      await this.cache.deleteByPrefix(RANKINGS_CACHE_PREFIX);
-      await this.cache.delete(HOME_CACHE_KEY);
-    });
+    this.jobs.register(JOB_NAMES.INVALIDATE_RANKINGS, () => this.coalescedInvalidate());
+  }
+
+  onModuleDestroy(): void {
+    if (this.invalidateTimer) {
+      clearTimeout(this.invalidateTimer);
+      this.invalidateTimer = null;
+    }
   }
 
   async recalculate(gameId: string, tx?: PrismaTransaction): Promise<void> {
     if (tx) {
-      await this.recalculateInside(gameId, tx);
+      await this.recalculateInside(gameId, tx, { includePlatforms: false });
       return;
     }
 
-    await this.prisma.$transaction((inner) => this.recalculateInside(gameId, inner));
+    await this.prisma.$transaction((inner) =>
+      this.recalculateInside(gameId, inner, { includePlatforms: true }),
+    );
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
   }
 
-  private async recalculateInside(gameId: string, tx: PrismaTransaction): Promise<void> {
+  private async recalculateInside(
+    gameId: string,
+    tx: PrismaTransaction,
+    options: { includePlatforms: boolean },
+  ): Promise<void> {
     const visibleWhere = {
       gameId,
       deletedAt: null,
@@ -84,11 +97,13 @@ export class ScoreRecalculationService implements OnModuleInit {
         where: { gameId, status: 'CONFIRMED' },
         select: { startAt: true, endAt: true },
       }),
-      tx.review.groupBy({
-        by: ['platformId', 'recommended'],
-        where: { ...visibleWhere, platformId: { not: null } },
-        _count: { _all: true },
-      }),
+      options.includePlatforms
+        ? tx.review.groupBy({
+            by: ['platformId', 'recommended'],
+            where: { ...visibleWhere, platformId: { not: null } },
+            _count: { _all: true },
+          })
+        : Promise.resolve([]),
     ]);
 
     const overall = this.fromGrouped(counts);
@@ -100,22 +115,21 @@ export class ScoreRecalculationService implements OnModuleInit {
     let excludingScore = score;
 
     if (bombWindows.length > 0) {
-      const excluded = await tx.review.findMany({
+      const excludedGroups = await tx.review.groupBy({
+        by: ['recommended'],
         where: {
           ...visibleWhere,
           OR: bombWindows.map((window) => ({
             createdAt: { gte: window.startAt, lte: window.endAt },
           })),
         },
-        select: { recommended: true },
+        _count: { _all: true },
       });
-
-      const excludedPositive = excluded.filter((row) => row.recommended).length;
-      const excludedNegative = excluded.length - excludedPositive;
+      const excluded = this.fromGrouped(excludedGroups);
       const excluding = {
-        total: Math.max(0, overall.total - excluded.length),
-        positive: Math.max(0, overall.positive - excludedPositive),
-        negative: Math.max(0, overall.negative - excludedNegative),
+        total: Math.max(0, overall.total - excluded.total),
+        positive: Math.max(0, overall.positive - excluded.positive),
+        negative: Math.max(0, overall.negative - excluded.negative),
         ratingSum: 0,
         ratingCount: 0,
         hoursSum: 0,
@@ -165,6 +179,18 @@ export class ScoreRecalculationService implements OnModuleInit {
       },
     });
 
+    if (options.includePlatforms) {
+      await this.rebuildPlatformStatistics(gameId, tx, platformRows);
+    }
+
+    this.logger.debug(`Recalculated statistics for game ${gameId} (${score.totalReviews} reviews)`);
+  }
+
+  private async rebuildPlatformStatistics(
+    gameId: string,
+    tx: PrismaTransaction,
+    platformRows: Array<{ platformId: string | null; recommended: boolean; _count: { _all: number } }>,
+  ): Promise<void> {
     await tx.gameStatisticsPlatform.deleteMany({ where: { gameId } });
 
     const perPlatform = new Map<string, { positive: number; negative: number }>();
@@ -193,8 +219,6 @@ export class ScoreRecalculationService implements OnModuleInit {
         }),
       });
     }
-
-    this.logger.debug(`Recalculated statistics for game ${gameId} (${score.totalReviews} reviews)`);
   }
 
   async bumpDailyActivity(
@@ -231,6 +255,33 @@ export class ScoreRecalculationService implements OnModuleInit {
       where: { gameId_date: { gameId, date } },
       data: { reviewCount, positiveCount, negativeCount },
     });
+  }
+
+  private coalescedInvalidate(): Promise<void> {
+    if (this.config.isTest) {
+      return this.flushInvalidate();
+    }
+
+    if (this.invalidateInFlight) {
+      return this.invalidateInFlight;
+    }
+
+    this.invalidateInFlight = new Promise((resolve) => {
+      this.invalidateTimer = setTimeout(() => {
+        this.invalidateTimer = null;
+        void this.flushInvalidate().finally(() => {
+          this.invalidateInFlight = null;
+          resolve();
+        });
+      }, INVALIDATE_DEBOUNCE_MS);
+    });
+
+    return this.invalidateInFlight;
+  }
+
+  private async flushInvalidate(): Promise<void> {
+    await this.cache.deleteByPrefix(RANKINGS_CACHE_PREFIX);
+    await this.cache.delete(HOME_CACHE_KEY);
   }
 
   private fromGrouped(

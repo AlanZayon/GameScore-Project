@@ -52,6 +52,8 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
             name={preview.name}
             src={preview.coverImageUrl}
             className="h-48 w-36 shrink-0 rounded-card"
+            sizes="144px"
+            priority
           />
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">{preview.name}</h1>

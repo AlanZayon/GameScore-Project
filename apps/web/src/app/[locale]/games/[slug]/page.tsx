@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 
@@ -9,14 +10,14 @@ import { publicEnv } from '@/lib/env';
 import { routing } from '@/i18n/routing';
 import type { CursorPaginatedResponse, GameDetailDto, GameStatisticsDto, ReviewDto } from '@gamescore/types';
 
-async function loadGame(slug: string) {
+const loadGame = cache(async (slug: string) => {
   try {
     return await apiFetch<GameDetailDto>(`/games/${slug}`);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;
   }
-}
+});
 
 export async function generateMetadata({
   params,

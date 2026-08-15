@@ -8,14 +8,26 @@ import { Link } from '@/i18n/navigation';
 import { ScoreBadge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 
-export function GameCard({ game }: { game: GameSummaryDto }) {
+export function GameCard({
+  game,
+  priority = false,
+}: {
+  game: GameSummaryDto;
+  priority?: boolean;
+}) {
   const t = useTranslations('score');
   const year = game.releaseDate ? game.releaseDate.slice(0, 4) : null;
 
   return (
     <Link href={`/games/${game.slug}`} className="block h-full">
       <Card className="flex h-full overflow-hidden transition hover:border-brand/40 hover:bg-surface-hover">
-        <GameCover name={game.name} src={game.coverImageUrl} className="h-36 w-28 shrink-0" />
+        <GameCover
+          name={game.name}
+          src={game.coverImageUrl}
+          className="h-36 w-28 shrink-0"
+          sizes="112px"
+          priority={priority}
+        />
         <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
           <div>
             <h3 className="truncate font-semibold">{game.name}</h3>

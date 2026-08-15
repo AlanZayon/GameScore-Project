@@ -10,7 +10,7 @@ export function ExternalGameCard({ hit }: { hit: ExternalGameHitDto }) {
   return (
     <Link href={`/games/ext/${hit.externalId}`} className="block h-full">
       <Card className="flex h-full overflow-hidden transition hover:border-brand/40 hover:bg-surface-hover">
-        <GameCover name={hit.name} src={hit.coverImageUrl} className="h-36 w-28 shrink-0" />
+        <GameCover name={hit.name} src={hit.coverImageUrl} className="h-36 w-28 shrink-0" sizes="112px" />
         <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
           <div>
             <h3 className="truncate font-semibold">{hit.name}</h3>

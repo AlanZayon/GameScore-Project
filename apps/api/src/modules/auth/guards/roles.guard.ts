@@ -1,6 +1,6 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { UserRole } from '@gamescore/shared';
+import { roleRank, type UserRole } from '@gamescore/shared';
 import type { Request } from 'express';
 
 import { ForbiddenError, UnauthorizedError } from '../../../common/errors/app.exception';
@@ -12,11 +12,6 @@ import { ROLES_METADATA_KEY } from '../decorators/roles.decorator';
  * Roles are hierarchical: an admin satisfies a moderator requirement without
  * every endpoint having to list both.
  */
-const ROLE_RANK: Record<UserRole, number> = {
-  USER: 0,
-  MODERATOR: 1,
-  ADMIN: 2,
-};
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -39,8 +34,8 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedError(ERROR_CODES.UNAUTHORIZED, 'Authentication required');
     }
 
-    const minimumRank = Math.min(...required.map((role) => ROLE_RANK[role]));
-    const userRank = ROLE_RANK[user.role as UserRole] ?? 0;
+    const minimumRank = Math.min(...required.map((role) => roleRank(role)));
+    const userRank = roleRank(user.role as UserRole);
     if (userRank < minimumRank) {
       throw new ForbiddenError(
         ERROR_CODES.INSUFFICIENT_ROLE,

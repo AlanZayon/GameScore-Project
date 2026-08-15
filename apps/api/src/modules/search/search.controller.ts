@@ -8,6 +8,7 @@ import type {
   SearchResultDto,
 } from '@gamescore/types';
 
+import { RequireRoles } from '../auth/decorators/auth.decorators';
 import { SearchService } from './application/search.service';
 import {
   AutocompleteQueryDto,
@@ -49,9 +50,10 @@ export class SearchController {
   }
 
   @Post('import')
+  @RequireRoles('MODERATOR')
   @Throttle({ default: { limit: 20, ttl: 60 * 1000 } })
   @ApiOperation({
-    summary: 'Import a game from IGDB (admin/tooling; public flow imports on first review)',
+    summary: 'Import a game from IGDB. Staff only; players import on first review of an external hit.',
   })
   @ApiOkResponse({ description: 'Imported or already-local game' })
   async importExternal(@Body() body: ImportExternalGameDto): Promise<ImportGameResultDto> {

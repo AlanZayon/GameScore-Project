@@ -49,6 +49,14 @@ export class GameRepository {
     });
   }
 
+  async findManyByIds(ids: string[]): Promise<GameWithRelations[]> {
+    if (ids.length === 0) return [];
+    return this.prisma.game.findMany({
+      where: { id: { in: ids } },
+      include: gameCardInclude,
+    });
+  }
+
   async findBySlug(slug: string, tx?: PrismaTransaction): Promise<GameWithRelations | null> {
     return this.client(tx).game.findUnique({
       where: { slug },

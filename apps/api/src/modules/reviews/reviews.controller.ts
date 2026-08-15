@@ -99,7 +99,7 @@ export class ReviewsController {
   @Delete('reviews/:id')
   @Authenticated()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Soft-delete a review' })
+  @ApiOperation({ summary: 'Soft-delete your own review. Staff must use POST /admin/reviews/:id/remove.' })
   @ApiNoContentResponse({ description: 'Review deleted' })
   async remove(
     @Param('id') id: string,

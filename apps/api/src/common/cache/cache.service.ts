@@ -17,6 +17,7 @@ interface MemoryEntry {
 export class CacheService implements OnModuleDestroy {
   private readonly logger = new Logger(CacheService.name);
   private readonly memory = new Map<string, MemoryEntry>();
+  private readonly inflight = new Map<string, Promise<unknown>>();
   private redisHealthy: boolean;
 
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis | null) {
@@ -92,9 +93,27 @@ export class CacheService implements OnModuleDestroy {
       return cached;
     }
 
-    const value = await factory();
-    await this.set(key, value, ttlSeconds);
-    return value;
+    const existing = this.inflight.get(key);
+    if (existing) {
+      return existing as Promise<T>;
+    }
+
+    const pending = (async () => {
+      try {
+        const again = await this.get<T>(key);
+        if (again !== null) {
+          return again;
+        }
+        const value = await factory();
+        await this.set(key, value, ttlSeconds);
+        return value;
+      } finally {
+        this.inflight.delete(key);
+      }
+    })();
+
+    this.inflight.set(key, pending);
+    return pending;
   }
 
   private async readRaw(key: string): Promise<string | null> {
@@ -125,6 +144,7 @@ export class CacheService implements OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     this.memory.clear();
+    this.inflight.clear();
     if (this.redis) {
       await this.redis.quit().catch(() => undefined);
     }

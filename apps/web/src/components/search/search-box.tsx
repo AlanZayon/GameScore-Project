@@ -75,6 +75,7 @@ export function SearchBox({ className }: { className?: string }) {
                   name={item.name}
                   src={item.coverImageUrl}
                   className="h-10 w-8 shrink-0 rounded-md"
+                  sizes="32px"
                 />
                 <span className="min-w-0 flex-1 truncate">{item.name}</span>
                 {item.releaseYear ? (

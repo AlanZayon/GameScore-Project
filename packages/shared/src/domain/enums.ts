@@ -9,6 +9,22 @@
 export const USER_ROLES = ['USER', 'MODERATOR', 'ADMIN'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+/** Hierarchical rank: a higher role satisfies a lower requirement. */
+export const USER_ROLE_RANK: Record<UserRole, number> = {
+  USER: 0,
+  MODERATOR: 1,
+  ADMIN: 2,
+};
+
+export function roleRank(role: UserRole): number {
+  return USER_ROLE_RANK[role] ?? 0;
+}
+
+/** True when `actor` may suspend, reinstate or otherwise moderate `target`. */
+export function canModerateRole(actor: UserRole, target: UserRole): boolean {
+  return roleRank(actor) > roleRank(target);
+}
+
 export const USER_STATUSES = ['ACTIVE', 'SUSPENDED'] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
 

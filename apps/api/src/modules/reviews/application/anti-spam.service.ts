@@ -16,6 +16,9 @@ export interface AntiSpamInput {
   text: string;
   fingerprint: string;
   ipHash: string | null;
+  /** Skip create-only rate limits when the author is editing an existing review. */
+  skipRateLimits?: boolean;
+  excludeReviewId?: string;
 }
 
 export interface AntiSpamResult {
@@ -56,13 +59,18 @@ export class AntiSpamService {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [hourCount, dayCount, duplicateCount, ipAccounts] = await Promise.all([
-      this.reviews.countRecentByUser(input.userId, hourAgo),
-      this.reviews.countRecentByUser(input.userId, dayAgo),
-      this.reviews.countRecentByFingerprint(input.fingerprint, dayAgo, input.userId),
-      input.ipHash ? this.reviews.countDistinctUsersByIp(input.ipHash, dayAgo) : Promise.resolve(0),
+      input.skipRateLimits ? Promise.resolve(0) : this.reviews.countRecentByUser(input.userId, hourAgo),
+      input.skipRateLimits ? Promise.resolve(0) : this.reviews.countRecentByUser(input.userId, dayAgo),
+      this.reviews.countRecentByFingerprint(input.fingerprint, dayAgo, {
+        excludeUserId: input.userId,
+        excludeReviewId: input.excludeReviewId,
+      }),
+      !input.skipRateLimits && input.ipHash
+        ? this.reviews.countDistinctUsersByIp(input.ipHash, dayAgo)
+        : Promise.resolve(0),
     ]);
 
-    if (hourCount >= maxReviewsPerHour || dayCount >= maxReviewsPerDay) {
+    if (!input.skipRateLimits && (hourCount >= maxReviewsPerHour || dayCount >= maxReviewsPerDay)) {
       throw new TooManyRequestsError(
         ERROR_CODES.REVIEW_RATE_LIMIT_EXCEEDED,
         'You are posting reviews too quickly',
@@ -82,7 +90,7 @@ export class AntiSpamService {
       moderationStatus = 'SUSPICIOUS';
     }
 
-    if (input.ipHash && ipAccounts >= maxAccountsPerIp) {
+    if (!input.skipRateLimits && input.ipHash && ipAccounts >= maxAccountsPerIp) {
       moderationStatus = 'MODERATION_REQUIRED';
     }
 

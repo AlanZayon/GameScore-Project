@@ -5,10 +5,10 @@
  */
 
 const BAD_COVER_HOSTS = ['placehold.co'];
+const OPTIMIZABLE_COVER_HOSTS = ['images.igdb.com', 'cdn.cloudflare.steamstatic.com'];
 
 export function isRemoteCoverUrl(url: string | null | undefined): url is string {
   if (!url) return false;
-  if (url.startsWith('data:')) return true;
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:') return false;
@@ -18,7 +18,15 @@ export function isRemoteCoverUrl(url: string | null | undefined): url is string 
   }
 }
 
-/** Used for OpenGraph tags — never emit a broken placehold URL. */
+export function isOptimizableCoverUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return OPTIMIZABLE_COVER_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+  } catch {
+    return false;
+  }
+}
+
 export function resolveCoverImageUrl(name: string, url: string | null | undefined): string | null {
   if (isRemoteCoverUrl(url)) return url;
   return null;

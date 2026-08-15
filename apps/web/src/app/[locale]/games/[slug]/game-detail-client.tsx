@@ -50,7 +50,7 @@ export function GameDetailClient({
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
         <div className="flex gap-5">
-          <GameCover name={game.name} src={game.coverImageUrl} className="h-48 w-36 shrink-0 rounded-card" />
+          <GameCover name={game.name} src={game.coverImageUrl} className="h-48 w-36 shrink-0 rounded-card" sizes="144px" priority />
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">{game.name}</h1>
             <p className="text-content-muted">{game.summary}</p>

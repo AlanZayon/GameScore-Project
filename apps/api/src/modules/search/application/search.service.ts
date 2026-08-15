@@ -60,9 +60,11 @@ export class SearchService {
       genreSlug: input.genreSlug,
     });
 
-    const games = await Promise.all(hits.items.map((hit) => this.games.findById(hit.gameId)));
-    const items = games
-      .filter((game): game is NonNullable<typeof game> => game !== null)
+    const games = await this.games.findManyByIds(hits.items.map((hit) => hit.gameId));
+    const byId = new Map(games.map((game) => [game.id, game]));
+    const items = hits.items
+      .map((hit) => byId.get(hit.gameId))
+      .filter((game): game is NonNullable<typeof game> => game !== undefined)
       .map((game) => toGameSummaryDto(game, this.config.ranking.scoreLabelMinimumReviews));
 
     const sources: SearchHitSource[] = ['local'];

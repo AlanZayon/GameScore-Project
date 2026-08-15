@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   AdminDashboardDto,
   AdminUserDto,
@@ -10,15 +10,23 @@ import type {
   UpdateGameRequest,
   UpdateUserRequest,
 } from '@gamescore/types';
-import type { ReportStatus, ReviewBombStatus, ReviewModerationStatus } from '@gamescore/shared';
+import {
+  canModerateRole,
+  type ReportStatus,
+  type ReviewBombStatus,
+  type ReviewModerationStatus,
+} from '@gamescore/shared';
 
 import { AppConfigService } from '../../../common/config/app-config.service';
 import { clampLimit, clampPage, paginated } from '../../../common/http/pagination';
 import {
   ConflictError,
+  ForbiddenError,
   NotFoundError,
 } from '../../../common/errors/app.exception';
 import { ERROR_CODES } from '../../../common/errors/error-codes';
+import { JOB_NAMES } from '../../../common/jobs/job-names';
+import { JOB_QUEUE, type JobQueue } from '../../../common/jobs/job-queue';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import type { AuthUser } from '../../auth/domain/auth-user';
 import { TokenService } from '../../auth/application/token.service';
@@ -47,6 +55,7 @@ export class AdminService {
     private readonly config: AppConfigService,
     private readonly importer: GameImportService,
     private readonly sync: GameSyncService,
+    @Inject(JOB_QUEUE) private readonly jobs: JobQueue,
   ) {}
 
   async dashboard(): Promise<AdminDashboardDto> {
@@ -245,6 +254,8 @@ export class AdminService {
       await this.scores.recalculate(review.gameId, tx);
       await this.audit.record(actor.id, 'ADMIN_DELETED_REVIEW', { type: 'review', id }, { reason }, tx);
     });
+    await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
+    await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
   }
 
   async restoreReview(id: string, actor: AuthUser): Promise<ReviewDto> {
@@ -276,6 +287,9 @@ export class AdminService {
       await this.audit.record(actor.id, 'ADMIN_RESTORED_REVIEW', { type: 'review', id }, undefined, tx);
       return saved;
     });
+
+    await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
+    await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
 
     return toReviewDto(restored);
   }
@@ -451,6 +465,8 @@ export class AdminService {
         tx,
       );
     });
+    await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: event.gameId });
+    await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
   }
 
   async listUsers(page?: number, limit?: number, q?: string): Promise<PaginatedResponse<AdminUserDto>> {
@@ -504,6 +520,15 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user || user.deletedAt) {
       throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND, 'User not found');
+    }
+
+    if (input.status === 'SUSPENDED' || (input.status === 'ACTIVE' && user.status === 'SUSPENDED')) {
+      if (!canModerateRole(actor.role, user.role)) {
+        throw new ForbiddenError(
+          ERROR_CODES.INSUFFICIENT_ROLE,
+          'You cannot suspend or reinstate an account with an equal or higher role',
+        );
+      }
     }
 
     if (input.status === 'SUSPENDED') {

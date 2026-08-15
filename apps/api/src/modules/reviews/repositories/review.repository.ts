@@ -293,13 +293,18 @@ export class ReviewRepository {
     });
   }
 
-  async countRecentByFingerprint(fingerprint: string, since: Date, excludeUserId?: string): Promise<number> {
+  async countRecentByFingerprint(
+    fingerprint: string,
+    since: Date,
+    options?: { excludeUserId?: string; excludeReviewId?: string },
+  ): Promise<number> {
     return this.prisma.review.count({
       where: {
         textFingerprint: fingerprint,
         createdAt: { gte: since },
         deletedAt: null,
-        ...(excludeUserId ? { userId: { not: excludeUserId } } : {}),
+        ...(options?.excludeUserId ? { userId: { not: options.excludeUserId } } : {}),
+        ...(options?.excludeReviewId ? { id: { not: options.excludeReviewId } } : {}),
       },
     });
   }

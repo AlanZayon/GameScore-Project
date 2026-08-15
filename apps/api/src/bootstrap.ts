@@ -20,6 +20,10 @@ export function configureApp(app: NestExpressApplication): void {
       // latter without protecting the former.
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
+      // Browser app is on another origin (different port on localhost). Helmet's
+      // default CORP "same-origin" turns credentialed cross-origin fetch into
+      // a opaque "Failed to fetch" in Chromium.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
   app.use(cookieParser());

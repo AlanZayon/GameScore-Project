@@ -72,11 +72,12 @@ export class IgdbClient {
     return rows[0] ?? null;
   }
 
-  async searchByName(name: string): Promise<IgdbGame[]> {
+  async searchByName(name: string, limit = 5): Promise<IgdbGame[]> {
     const escaped = name.replace(/"/g, '');
+    const capped = Math.min(25, Math.max(1, Math.trunc(limit)));
     return this.query<IgdbGame>(
       'games',
-      `search "${escaped}"; fields id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation; limit 5;`,
+      `search "${escaped}"; fields id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation; limit ${capped};`,
     );
   }
 

@@ -3,6 +3,7 @@
 import type { GameSummaryDto } from '@gamescore/types';
 import { useTranslations } from 'next-intl';
 
+import { GameCover } from '@/components/game/game-cover';
 import { Link } from '@/i18n/navigation';
 import { ScoreBadge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -14,14 +15,7 @@ export function GameCard({ game }: { game: GameSummaryDto }) {
   return (
     <Link href={`/games/${game.slug}`} className="block h-full">
       <Card className="flex h-full overflow-hidden transition hover:border-brand/40 hover:bg-surface-hover">
-        <div className="relative h-36 w-28 shrink-0 bg-surface-raised">
-          {game.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={game.coverImageUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-xs text-content-subtle">GS</div>
-          )}
-        </div>
+        <GameCover name={game.name} src={game.coverImageUrl} className="h-36 w-28 shrink-0" />
         <div className="flex min-w-0 flex-1 flex-col gap-2 p-3">
           <div>
             <h3 className="truncate font-semibold">{game.name}</h3>

@@ -5,7 +5,8 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { GameCard } from '@/components/game/game-card';
-import { EmptyState, Skeleton, Tabs } from '@/components/ui/misc';
+import { EmptyState, Tabs } from '@/components/ui/misc';
+import { GameCardGridSkeleton } from '@/components/ui/skeletons';
 import { apiFetch } from '@/lib/api';
 
 const TABS = [
@@ -20,15 +21,21 @@ export default function RankingsPage() {
   const [tab, setTab] = useState('top-rated');
   const [data, setData] = useState<RankingResponseDto | null>(null);
   const [loadedTab, setLoadedTab] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const current = TABS.find((item) => item.id === tab)!;
     let cancelled = false;
-    void apiFetch<RankingResponseDto>(current.path).then((result) => {
-      if (cancelled) return;
-      setData(result);
-      setLoadedTab(tab);
-    });
+    setError(false);
+    void apiFetch<RankingResponseDto>(current.path)
+      .then((result) => {
+        if (cancelled) return;
+        setData(result);
+        setLoadedTab(tab);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -47,12 +54,10 @@ export default function RankingsPage() {
         value={tab}
         onChange={setTab}
       />
-      {loading || !data ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-36" />
-          ))}
-        </div>
+      {error ? (
+        <EmptyState title={t('empty')} />
+      ) : loading || !data ? (
+        <GameCardGridSkeleton count={6} columns="rankings" />
       ) : data.entries.length === 0 ? (
         <EmptyState title={t('empty')} />
       ) : (

@@ -16,6 +16,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * Refresh-token rotation must not run twice in parallel. React Strict Mode
+ * remounts effects in development; a second call with the already-rotated
+ * cookie would revoke every session for the account.
+ */
+let refreshInFlight: Promise<AuthSessionResponse> | null = null;
+
+function refreshSession(): Promise<AuthSessionResponse> {
+  if (!refreshInFlight) {
+    refreshInFlight = apiFetch<AuthSessionResponse>('/auth/refresh', { method: 'POST' }).finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -30,10 +46,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     void (async () => {
       try {
-        const session = await apiFetch<AuthSessionResponse>('/auth/refresh', { method: 'POST' });
+        const session = await refreshSession();
         if (!cancelled) applySession(session);
       } catch (error) {
-        if (!(error instanceof ApiError && (error.status === 401 || error.status === 403))) {
+        // No session, expired cookie, or API briefly unreachable during restart.
+        const isExpectedAuthMiss =
+          (error instanceof ApiError && (error.status === 401 || error.status === 403)) ||
+          (error instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(error.message));
+        if (!isExpectedAuthMiss) {
           console.error(error);
         }
       } finally {

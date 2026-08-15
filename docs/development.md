@@ -36,17 +36,21 @@ pnpm build
 
 ## IGDB
 
-Create an application at https://dev.twitch.tv/console/apps and set `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` in `.env`. Leave them empty to keep the rest of the app working; only import is disabled.
+Create an application at https://dev.twitch.tv/console/apps and set `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` in `.env`. Leave them empty to keep the rest of the app working; only IGDB-backed search fallback and import are disabled.
 
-The client caches the Twitch OAuth token and limits itself to 4 requests per second. Imports are idempotent on `(provider, externalId)`. Fields listed in `Game.editedFields` are never overwritten by a later sync.
+### Demand-driven catalogue growth
 
-A live import can be verified from `/admin` (Import tab) or:
+Search and autocomplete hit Postgres first. When local results are thin (fewer than 3 on page 1) and IGDB is configured, the API also returns `externalItems` from IGDB. Opening a title goes to `/games/ext/:externalId` (preview only — nothing is written yet). The game is imported into Postgres on the **first published review** via `POST /games/external/:externalId/reviews`.
+
+A bulk/admin import can still be verified from `/admin` (Import tab) or:
 
 ```http
 POST /admin/games/import
 Authorization: Bearer <admin access token>
 { "externalId": "1942" }
 ```
+
+The client caches the Twitch OAuth token and limits itself to 4 requests per second. Imports are idempotent on `(provider, externalId)`. Fields listed in `Game.editedFields` are never overwritten by a later sync.
 
 ## Seed accounts
 
@@ -62,7 +66,7 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 
 1. Home shows popular, top rated, new releases and trending sections with seeded games.
 2. Catalogue filters by platform and genre and keeps both filters in the URL.
-3. Search autocomplete and `/search?q=` return matching games (name, developer, publisher).
+3. Search autocomplete and `/search?q=` return matching local games (with covers); with IGDB configured, thin local results also show external hits that open a preview page and only import on the first review.
 4. Game page at `/games/<slug>` is SSR, has canonical + hreflang, OpenGraph tags, score panel, platform breakdown and reviews.
 5. Portuguese URLs have no locale prefix (`/games/elden-ring`); English is `/en/games/elden-ring`.
 6. Register, login, refresh (reload the page still authenticated) and logout work. Access token is not in localStorage.

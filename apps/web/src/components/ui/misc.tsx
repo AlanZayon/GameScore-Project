@@ -51,7 +51,7 @@ export function Tabs({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-surface-hover ${className ?? 'h-4 w-full'}`} />;
+  return <div className={`skeleton-shimmer rounded-lg ${className ?? 'h-4 w-full'}`} aria-hidden />;
 }
 
 export function Pagination({

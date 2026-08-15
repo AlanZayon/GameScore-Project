@@ -9,6 +9,7 @@ import { useToast } from '@/components/providers/toast-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, EmptyState } from '@/components/ui/misc';
+import { AdminPageSkeleton, ListRowsSkeleton } from '@/components/ui/skeletons';
 import { apiFetch, qs } from '@/lib/api';
 import { useRouter } from '@/i18n/navigation';
 
@@ -27,6 +28,7 @@ export default function AdminPage() {
   const [importId, setImportId] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [tabLoading, setTabLoading] = useState(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -37,19 +39,53 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!accessToken) return;
-    if (tab === 'dashboard') void apiFetch<AdminDashboardDto>('/admin/dashboard', { accessToken }).then(setDashboard);
-    if (tab === 'reports') void apiFetch<PaginatedResponse<ReviewReportDto>>(`/admin/reports${qs({ status: 'PENDING' })}`, { accessToken }).then(setReports);
-    if (tab === 'bombs') void apiFetch<PaginatedResponse<ReviewBombEventDto>>('/admin/review-bombs', { accessToken }).then(setBombs);
-    if (tab === 'users' && user?.role === 'ADMIN') {
-      void apiFetch<PaginatedResponse<AdminUserDto>>('/admin/users', { accessToken }).then(setUsers);
+    let cancelled = false;
+    setTabLoading(true);
+
+    async function load() {
+      try {
+        if (tab === 'dashboard') {
+          const data = await apiFetch<AdminDashboardDto>('/admin/dashboard', { accessToken });
+          if (!cancelled) setDashboard(data);
+        }
+        if (tab === 'reports') {
+          const data = await apiFetch<PaginatedResponse<ReviewReportDto>>(
+            `/admin/reports${qs({ status: 'PENDING' })}`,
+            { accessToken },
+          );
+          if (!cancelled) setReports(data);
+        }
+        if (tab === 'bombs') {
+          const data = await apiFetch<PaginatedResponse<ReviewBombEventDto>>('/admin/review-bombs', {
+            accessToken,
+          });
+          if (!cancelled) setBombs(data);
+        }
+        if (tab === 'users' && user?.role === 'ADMIN') {
+          const data = await apiFetch<PaginatedResponse<AdminUserDto>>('/admin/users', { accessToken });
+          if (!cancelled) setUsers(data);
+        }
+        if (tab === 'reviews') {
+          const data = await apiFetch<PaginatedResponse<ReviewDto>>('/admin/reviews', { accessToken });
+          if (!cancelled) setReviews(data);
+        }
+        if (tab === 'games' && user?.role === 'ADMIN') {
+          const data = await apiFetch<PaginatedResponse<GameSummaryDto>>('/admin/games', { accessToken });
+          if (!cancelled) setGames(data);
+        }
+      } finally {
+        if (!cancelled) setTabLoading(false);
+      }
     }
-    if (tab === 'reviews') void apiFetch<PaginatedResponse<ReviewDto>>('/admin/reviews', { accessToken }).then(setReviews);
-    if (tab === 'games' && user?.role === 'ADMIN') {
-      void apiFetch<PaginatedResponse<GameSummaryDto>>('/admin/games', { accessToken }).then(setGames);
-    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [tab, accessToken, user?.role]);
 
-  if (!ready || !user || user.role === 'USER') return null;
+  if (!ready) return <AdminPageSkeleton />;
+  if (!user || user.role === 'USER') return null;
 
   async function importGame() {
     try {
@@ -78,10 +114,15 @@ export default function AdminPage() {
             : []),
         ]}
         value={tab}
-        onChange={setTab}
+        onChange={(next) => {
+          setTabLoading(true);
+          setTab(next);
+        }}
       />
 
-      {tab === 'dashboard' && dashboard ? (
+      {tabLoading ? <ListRowsSkeleton rows={tab === 'dashboard' ? 6 : 4} /> : null}
+
+      {!tabLoading && tab === 'dashboard' && dashboard ? (
         <div className="grid gap-3 sm:grid-cols-3">
           {Object.entries(dashboard.totals).map(([key, value]) => (
             <div key={key} className="rounded-card border border-border-subtle bg-surface p-4">
@@ -92,7 +133,7 @@ export default function AdminPage() {
         </div>
       ) : null}
 
-      {tab === 'reports' && reports ? (
+      {!tabLoading && tab === 'reports' && reports ? (
         reports.items.length === 0 ? (
           <EmptyState title={t('empty')} />
         ) : (
@@ -136,7 +177,7 @@ export default function AdminPage() {
         )
       ) : null}
 
-      {tab === 'bombs' && bombs ? (
+      {!tabLoading && tab === 'bombs' && bombs ? (
         bombs.items.length === 0 ? (
           <EmptyState title={t('empty')} />
         ) : (
@@ -179,7 +220,7 @@ export default function AdminPage() {
         )
       ) : null}
 
-      {tab === 'reviews' && reviews ? (
+      {!tabLoading && tab === 'reviews' && reviews ? (
         reviews.items.length === 0 ? (
           <EmptyState title={t('empty')} />
         ) : (
@@ -225,7 +266,7 @@ export default function AdminPage() {
         )
       ) : null}
 
-      {tab === 'games' && games ? (
+      {!tabLoading && tab === 'games' && games ? (
         games.items.length === 0 ? (
           <EmptyState title={t('empty')} />
         ) : (
@@ -277,7 +318,7 @@ export default function AdminPage() {
         )
       ) : null}
 
-      {tab === 'users' && users ? (
+      {!tabLoading && tab === 'users' && users ? (
         users.items.length === 0 ? (
           <EmptyState title={t('empty')} />
         ) : (
@@ -324,7 +365,7 @@ export default function AdminPage() {
         )
       ) : null}
 
-      {tab === 'import' ? (
+      {!tabLoading && tab === 'import' ? (
         <div className="max-w-md space-y-3">
           <p className="text-sm text-content-muted">{t('importHelp')}</p>
           <Input value={importId} onChange={(event) => setImportId(event.target.value)} placeholder="IGDB id" />

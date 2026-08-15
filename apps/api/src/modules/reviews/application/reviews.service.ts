@@ -23,6 +23,7 @@ import { JOB_NAMES } from '../../../common/jobs/job-names';
 import { JOB_QUEUE, type JobQueue } from '../../../common/jobs/job-queue';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import type { AuthUser } from '../../auth/domain/auth-user';
+import { GameImportService } from '../../integrations/application/game-import.service';
 import { GameRepository } from '../../games/repositories/game.repository';
 import { ReputationService } from '../../ratings/application/reputation.service';
 import { ReviewRankingService } from '../../ratings/application/review-ranking.service';
@@ -40,6 +41,7 @@ export class ReviewsService {
     private readonly ranking: ReviewRankingService,
     private readonly reputation: ReputationService,
     private readonly scores: ScoreRecalculationService,
+    private readonly importer: GameImportService,
     private readonly prisma: PrismaService,
     private readonly config: AppConfigService,
     @Inject(JOB_QUEUE) private readonly jobs: JobQueue,
@@ -91,7 +93,31 @@ export class ReviewsService {
     clientIp?: string,
   ): Promise<ReviewDto> {
     const game = await this.requireGame(slug);
-    const existing = await this.reviews.findActiveByUserAndGame(author.id, game.id);
+    return this.createForGame(game.id, input, author, clientIp);
+  }
+
+  /**
+   * First review of an external catalogue hit: import into Postgres, then publish.
+   * Browsing/search never write the game; this is the catalogue growth trigger.
+   */
+  async createForExternal(
+    externalId: string,
+    input: CreateReviewRequest,
+    author: AuthUser,
+    clientIp?: string,
+  ): Promise<ReviewDto> {
+    const imported = await this.importer.importByExternalId(externalId);
+    const platformId = await this.resolvePlatformRef(imported.gameId, input.platformId);
+    return this.create(imported.slug, { ...input, platformId }, author, clientIp);
+  }
+
+  private async createForGame(
+    gameId: string,
+    input: CreateReviewRequest,
+    author: AuthUser,
+    clientIp?: string,
+  ): Promise<ReviewDto> {
+    const existing = await this.reviews.findActiveByUserAndGame(author.id, gameId);
     if (existing) {
       throw new ConflictError(
         ERROR_CODES.REVIEW_ALREADY_EXISTS,
@@ -99,7 +125,7 @@ export class ReviewsService {
       );
     }
 
-    await this.assertPlatform(game.id, input.platformId);
+    const platformId = await this.resolvePlatformRef(gameId, input.platformId);
     this.assertReviewPayload(input);
 
     const fingerprint = reviewFingerprint(input.text);
@@ -124,13 +150,13 @@ export class ReviewsService {
     const created = await this.prisma.$transaction(async (tx) => {
       const review = await this.reviews.create(
         {
-          gameId: game.id,
+          gameId,
           userId: author.id,
           recommended: input.recommended,
           text: input.text.trim(),
           rating: input.rating ?? null,
           hoursPlayed: input.hoursPlayed ?? null,
-          platformId: input.platformId ?? null,
+          platformId,
           rankingScore,
           textFingerprint: fingerprint,
           authorIpHash: ipHash,
@@ -145,13 +171,13 @@ export class ReviewsService {
         { type: 'review', id: review.id },
         tx,
       );
-      await this.scores.bumpDailyActivity(game.id, input.recommended, review.createdAt, 1, tx);
-      await this.scores.recalculate(game.id, tx);
+      await this.scores.bumpDailyActivity(gameId, input.recommended, review.createdAt, 1, tx);
+      await this.scores.recalculate(gameId, tx);
       return review;
     });
 
     await this.jobs.enqueue(JOB_NAMES.DETECT_REVIEW_BOMB, {
-      gameId: game.id,
+      gameId,
       date: isoDate(created.createdAt),
     });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
@@ -438,16 +464,26 @@ export class ReviewsService {
     return review;
   }
 
-  private async assertPlatform(gameId: string, platformId?: string | null): Promise<void> {
-    if (!platformId) return;
+  private async resolvePlatformRef(
+    gameId: string,
+    platformRef?: string | null,
+  ): Promise<string | null> {
+    if (!platformRef) return null;
     const game = await this.games.findById(gameId);
-    const allowed = game?.platforms.some((link) => link.platformId === platformId);
-    if (!allowed) {
+    const match = game?.platforms.find(
+      (link) => link.platformId === platformRef || link.platform.slug === platformRef,
+    );
+    if (!match) {
       throw new BadRequestError(
         ERROR_CODES.PLATFORM_NOT_AVAILABLE_FOR_GAME,
         'That platform is not listed for this game',
       );
     }
+    return match.platformId;
+  }
+
+  private async assertPlatform(gameId: string, platformId?: string | null): Promise<void> {
+    await this.resolvePlatformRef(gameId, platformId);
   }
 
   private assertReviewPayload(input: {

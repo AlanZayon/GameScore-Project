@@ -46,9 +46,14 @@ export class CreateReviewDto {
   @Max(100000)
   hoursPlayed?: number | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Local platform UUID, or platform slug when reviewing an external (not-yet-imported) game',
+  })
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @Length(1, 80)
   platformId?: string | null;
 }
 

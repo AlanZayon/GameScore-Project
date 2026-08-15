@@ -102,6 +102,9 @@
     "voteError": "Could not record your vote.",
     "writeTitle": "Write a review",
     "textLabel": "Review",
+    "textHint": "At least {min} characters.",
+    "textRequired": "Please write your review.",
+    "textTooShort": "Reviews need at least {min} characters.",
     "ratingLabel": "Optional 0–10 rating",
     "hoursLabel": "Hours played",
     "platformLabel": "Platform",
@@ -119,7 +122,14 @@
     "title": "Search",
     "prompt": "Type a game name in the search box above.",
     "resultsFor": "Results for “{query}”",
-    "empty": "No games found."
+    "empty": "No games found.",
+    "inCatalogue": "In catalogue",
+    "availableOnline": "Available to add",
+    "availableOnlineHint": "Open a title to import it into the catalogue, then you can review it.",
+    "fromIgdb": "IGDB",
+    "addToCatalogue": "Open to add",
+    "importing": "Adding…",
+    "importFailed": "Could not import this game."
   },
   "rankings": {
     "title": "Rankings",

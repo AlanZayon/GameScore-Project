@@ -102,6 +102,9 @@
     "voteError": "Não foi possível votar.",
     "writeTitle": "Escrever avaliação",
     "textLabel": "Texto",
+    "textHint": "Mínimo de {min} caracteres.",
+    "textRequired": "Escreva sua avaliação.",
+    "textTooShort": "A avaliação precisa ter pelo menos {min} caracteres.",
     "ratingLabel": "Nota 0–10 (opcional)",
     "hoursLabel": "Horas jogadas",
     "platformLabel": "Plataforma",
@@ -119,7 +122,14 @@
     "title": "Busca",
     "prompt": "Digite o nome de um jogo na busca acima.",
     "resultsFor": "Resultados para “{query}”",
-    "empty": "Nenhum jogo encontrado."
+    "empty": "Nenhum jogo encontrado.",
+    "inCatalogue": "No catálogo",
+    "availableOnline": "Disponíveis para adicionar",
+    "availableOnlineHint": "Abra um título para importá-lo ao catálogo; depois você pode avaliar.",
+    "fromIgdb": "IGDB",
+    "addToCatalogue": "Abrir para adicionar",
+    "importing": "Adicionando…",
+    "importFailed": "Não foi possível importar este jogo."
   },
   "rankings": {
     "title": "Rankings",

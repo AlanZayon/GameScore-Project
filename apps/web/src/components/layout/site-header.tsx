@@ -9,13 +9,14 @@ import { useTheme } from '@/components/providers/theme-provider';
 import { SearchBox } from '@/components/search/search-box';
 import { Button } from '@/components/ui/button';
 import { Dropdown } from '@/components/ui/misc';
+import { Skeleton } from '@/components/ui/skeletons';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { routing } from '@/i18n/routing';
 
 export function SiteHeader() {
   const t = useTranslations('nav');
   const localeT = useTranslations('locale');
-  const { user, logout } = useAuth();
+  const { user, logout, ready } = useAuth();
   const { toggle, theme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -54,7 +55,9 @@ export function SiteHeader() {
               </button>
             ))}
           </Dropdown>
-          {user ? (
+          {!ready ? (
+            <Skeleton className="hidden h-8 w-24 rounded-lg sm:block" />
+          ) : user ? (
             <Dropdown
               trigger={
                 <Button variant="ghost" size="sm">

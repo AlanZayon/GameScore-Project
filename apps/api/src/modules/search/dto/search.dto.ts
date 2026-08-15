@@ -48,3 +48,10 @@ export class AutocompleteQueryDto {
   @Max(20)
   limit?: number = 8;
 }
+
+export class ImportExternalGameDto {
+  @ApiProperty({ example: '1942', description: 'IGDB game id' })
+  @IsString()
+  @Length(1, 32)
+  externalId!: string;
+}

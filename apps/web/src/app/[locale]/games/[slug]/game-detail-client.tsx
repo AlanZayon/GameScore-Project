@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { ReviewCard } from '@/components/game/review-card';
 import { ReviewForm } from '@/components/game/review-form';
 import { ScorePanel } from '@/components/game/score-panel';
+import { GameCover } from '@/components/game/game-cover';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/misc';
@@ -49,12 +50,7 @@ export function GameDetailClient({
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <div className="space-y-6">
         <div className="flex gap-5">
-          <div className="h-48 w-36 shrink-0 overflow-hidden rounded-card bg-surface-raised">
-            {game.coverImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={game.coverImageUrl} alt="" className="h-full w-full object-cover" />
-            ) : null}
-          </div>
+          <GameCover name={game.name} src={game.coverImageUrl} className="h-48 w-36 shrink-0 rounded-card" />
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">{game.name}</h1>
             <p className="text-content-muted">{game.summary}</p>

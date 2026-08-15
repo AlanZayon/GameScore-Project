@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { GameDetailClient } from './game-detail-client';
 import { apiFetch, ApiError } from '@/lib/api';
+import { resolveCoverImageUrl } from '@/lib/cover-image';
 import { publicEnv } from '@/lib/env';
 import { routing } from '@/i18n/routing';
 import type { CursorPaginatedResponse, GameDetailDto, GameStatisticsDto, ReviewDto } from '@gamescore/types';
@@ -45,7 +46,10 @@ export async function generateMetadata({
       description,
       type: 'website',
       url: `${publicEnv.siteUrl}${canonical}`,
-      images: game.coverImageUrl ? [{ url: game.coverImageUrl }] : undefined,
+      images: (() => {
+        const cover = resolveCoverImageUrl(game.name, game.coverImageUrl);
+        return cover ? [{ url: cover }] : undefined;
+      })(),
     },
   };
 }

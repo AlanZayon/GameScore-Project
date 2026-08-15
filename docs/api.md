@@ -20,7 +20,8 @@ Replaying a rotated refresh token revokes **every** session for that account.
 
 ## Catalogue
 
-`GET /games`, `GET /games/:slug`, `GET /games/:slug/statistics`, `GET /platforms`, `GET /genres`, `GET /search`, `GET /search/autocomplete`
+`GET /games`, `GET /games/:slug`, `GET /games/:slug/statistics`, `GET /platforms`, `GET /genres`, `GET /search`, `GET /search/autocomplete`, `GET /search/external/:externalId`, `POST /games/external/:externalId/reviews`, `POST /search/import`
+
 
 ## Reviews
 

@@ -58,6 +58,21 @@ export class ReviewsController {
     return this.reviews.create(slug, dto, user, request.ip);
   }
 
+  @Post('games/external/:externalId/reviews')
+  @Authenticated()
+  @ApiOperation({
+    summary: 'Import an IGDB game (if needed) and publish the first review in one step',
+  })
+  @ApiCreatedResponse({ description: 'Review created after on-demand import' })
+  async createForExternal(
+    @Param('externalId') externalId: string,
+    @Body() dto: CreateReviewDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: Request,
+  ): Promise<ReviewDto> {
+    return this.reviews.createForExternal(externalId, dto, user, request.ip);
+  }
+
   @Get('reviews/:id')
   @OptionalAuth()
   @ApiOperation({ summary: 'Single review' })

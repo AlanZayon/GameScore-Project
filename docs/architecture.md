@@ -27,7 +27,7 @@ Controllers never import Prisma. Derived statistics (`GameStatistics`, daily act
 | `auth` | Register, login, refresh rotation, logout, JWT guards, roles |
 | `users` | Public profiles |
 | `games` | Catalogue, slug lookup, platforms, genres, view counting |
-| `search` | `SearchProvider` + `PostgresSearchProvider` (full-text + trigram) |
+| `search` | Local FTS + trigram; IGDB fallback when thin; preview at `/games/ext/:id`; import on first review |
 | `reviews` | Create/edit/soft-delete, votes, reports, anti-spam, review-bomb detector |
 | `ratings` | Score recalculation, reputation, review ranking, snapshots |
 | `rankings` | Top rated, trending, new releases, popular, home feed |

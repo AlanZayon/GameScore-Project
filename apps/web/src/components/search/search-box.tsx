@@ -4,9 +4,16 @@ import type { AutocompleteItemDto } from '@gamescore/types';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
+import { GameCover } from '@/components/game/game-cover';
 import { Link, useRouter } from '@/i18n/navigation';
 import { apiFetch, qs } from '@/lib/api';
 import { Input } from '@/components/ui/input';
+
+function suggestionHref(item: AutocompleteItemDto): string {
+  if (item.slug) return `/games/${item.slug}`;
+  if (item.externalId) return `/games/ext/${item.externalId}`;
+  return '/search';
+}
 
 export function SearchBox({ className }: { className?: string }) {
   const t = useTranslations('nav');
@@ -60,11 +67,19 @@ export function SearchBox({ className }: { className?: string }) {
           {suggestions.map((item) => (
             <li key={item.id}>
               <Link
-                href={`/games/${item.slug}`}
-                className="flex items-center justify-between gap-3 px-3 py-2 text-sm hover:bg-surface-hover"
+                href={suggestionHref(item)}
+                className="flex items-center gap-3 px-3 py-2 text-sm hover:bg-surface-hover"
+                onClick={() => setOpen(false)}
               >
-                <span className="truncate">{item.name}</span>
-                <span className="text-xs text-content-subtle">{item.releaseYear ?? ''}</span>
+                <GameCover
+                  name={item.name}
+                  src={item.coverImageUrl}
+                  className="h-10 w-8 shrink-0 rounded-md"
+                />
+                <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                {item.releaseYear ? (
+                  <span className="shrink-0 text-xs text-content-subtle">{item.releaseYear}</span>
+                ) : null}
               </Link>
             </li>
           ))}

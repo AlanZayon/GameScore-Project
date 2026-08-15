@@ -132,6 +132,7 @@ export class PostgresSearchProvider implements SearchProvider {
       releaseYear: row.releaseDate ? row.releaseDate.getUTCFullYear() : null,
       positivePercentage: row.positivePercentage,
       totalReviews: row.totalReviews ?? 0,
+      source: 'local' as const,
     }));
   }
 

@@ -11,6 +11,15 @@ const ARGON = {
   parallelism: 1,
 } as const;
 
+/** Steam library covers are public CDN URLs — no API key, no broken placeholders. */
+function steamCoverUrl(appId: number): string {
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/library_600x900.jpg`;
+}
+
+function steamBannerUrl(appId: number): string {
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`;
+}
+
 interface SeedGame {
   name: string;
   summary: string;
@@ -23,6 +32,8 @@ interface SeedGame {
   positiveRate: number;
   reviewCount: number;
   bomb?: boolean;
+  /** Steam app id used for library cover art on the CDN. */
+  steamAppId?: number;
 }
 
 const PLATFORMS: Array<{ slug: string; name: string; abbreviation: string; family: PlatformFamily; sortOrder: number }> = [
@@ -50,27 +61,27 @@ const GENRES = [
 ];
 
 const GAMES: SeedGame[] = [
-  { name: 'Elden Ring', summary: 'An open-world action RPG from FromSoftware.', developer: 'FromSoftware', publisher: 'Bandai Namco', releaseDate: '2022-02-25', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['action', 'rpg'], positiveRate: 0.94, reviewCount: 86 },
-  { name: 'The Witcher 3: Wild Hunt', summary: 'A sprawling fantasy RPG about a monster hunter and his choices.', developer: 'CD Projekt Red', publisher: 'CD Projekt', releaseDate: '2015-05-19', platforms: ['pc', 'ps5', 'xbox-series', 'switch'], genres: ['rpg', 'adventure'], positiveRate: 0.96, reviewCount: 72 },
-  { name: 'Hades', summary: 'A rogue-like dungeon crawler where you fight to escape the Underworld.', developer: 'Supergiant Games', publisher: 'Supergiant Games', releaseDate: '2020-09-17', platforms: ['pc', 'switch', 'ps5', 'xbox-series'], genres: ['action', 'indie'], positiveRate: 0.98, reviewCount: 54 },
-  { name: 'Stardew Valley', summary: 'A farming sim about rebuilding a life in the countryside.', developer: 'ConcernedApe', publisher: 'ConcernedApe', releaseDate: '2016-02-26', platforms: ['pc', 'switch', 'ps4', 'xbox-one', 'ios', 'android'], genres: ['simulation', 'indie'], positiveRate: 0.97, reviewCount: 61 },
-  { name: 'Baldur\'s Gate 3', summary: 'A critically acclaimed RPG built on D&D 5e.', developer: 'Larian Studios', publisher: 'Larian Studios', releaseDate: '2023-08-03', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['rpg', 'adventure'], positiveRate: 0.96, reviewCount: 70 },
-  { name: 'Celeste', summary: 'A precise platformer about climbing a mountain and yourself.', developer: 'Maddy Makes Games', publisher: 'Maddy Makes Games', releaseDate: '2018-01-25', platforms: ['pc', 'switch', 'ps4', 'xbox-one'], genres: ['platformer', 'indie'], positiveRate: 0.97, reviewCount: 40 },
-  { name: 'Disco Elysium', summary: 'A detective RPG where skills argue with you.', developer: 'ZA/UM', publisher: 'ZA/UM', releaseDate: '2019-10-15', platforms: ['pc', 'ps5', 'xbox-series', 'switch'], genres: ['rpg', 'adventure'], positiveRate: 0.93, reviewCount: 38 },
-  { name: 'Hollow Knight', summary: 'A haunting action-adventure through a ruined insect kingdom.', developer: 'Team Cherry', publisher: 'Team Cherry', releaseDate: '2017-02-24', platforms: ['pc', 'switch', 'ps4', 'xbox-one'], genres: ['action', 'adventure', 'indie'], positiveRate: 0.95, reviewCount: 44 },
-  { name: 'Portal 2', summary: 'A co-op puzzle game that still has the best jokes in games.', developer: 'Valve', publisher: 'Valve', releaseDate: '2011-04-19', platforms: ['pc', 'ps4', 'xbox-one'], genres: ['adventure'], positiveRate: 0.99, reviewCount: 33 },
-  { name: 'Red Dead Redemption 2', summary: 'An enormous western about the end of an outlaw era.', developer: 'Rockstar Games', publisher: 'Rockstar Games', releaseDate: '2018-10-26', platforms: ['pc', 'ps4', 'xbox-one'], genres: ['action', 'adventure'], positiveRate: 0.9, reviewCount: 48 },
-  { name: 'Cyberpunk 2077', summary: 'A night city RPG that recovered from a disastrous launch.', developer: 'CD Projekt Red', publisher: 'CD Projekt', releaseDate: '2020-12-10', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['rpg', 'action'], positiveRate: 0.78, reviewCount: 55 },
-  { name: 'Starfield', summary: 'A vast space RPG with as much busywork as wonder.', developer: 'Bethesda Game Studios', publisher: 'Bethesda Softworks', releaseDate: '2023-09-06', platforms: ['pc', 'xbox-series'], genres: ['rpg', 'adventure'], positiveRate: 0.62, reviewCount: 42 },
-  { name: 'Assassin\'s Creed Valhalla', summary: 'A very long Viking action RPG.', developer: 'Ubisoft Montreal', publisher: 'Ubisoft', releaseDate: '2020-11-10', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['action', 'rpg'], positiveRate: 0.68, reviewCount: 36 },
-  { name: 'FIFA 23', summary: 'The annual football sim, for better and worse.', developer: 'EA Sports', publisher: 'Electronic Arts', releaseDate: '2022-09-30', platforms: ['pc', 'ps5', 'xbox-series', 'switch'], genres: ['sports'], positiveRate: 0.41, reviewCount: 28 },
-  { name: 'Concord', summary: 'A hero shooter that did not find an audience.', developer: 'Firewalk Studios', publisher: 'Sony Interactive Entertainment', releaseDate: '2024-08-23', platforms: ['pc', 'ps5'], genres: ['shooter'], positiveRate: 0.12, reviewCount: 24 },
-  { name: 'The Day Before', summary: 'An extraction shooter remembered mostly for what it was not.', developer: 'Fntastic', publisher: 'Mytona', releaseDate: '2023-12-07', platforms: ['pc'], genres: ['shooter'], positiveRate: 0.08, reviewCount: 18 },
-  { name: 'Skull and Bones', summary: 'A pirate MMO that arrived years late.', developer: 'Ubisoft Singapore', publisher: 'Ubisoft', releaseDate: '2024-02-16', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['action', 'adventure'], positiveRate: 0.34, reviewCount: 22 },
-  { name: 'Outer Wilds', summary: 'A time-loop exploration game people refuse to spoil.', developer: 'Mobius Digital', publisher: 'Annapurna Interactive', releaseDate: '2019-05-30', platforms: ['pc', 'ps4', 'xbox-one', 'switch'], genres: ['adventure', 'indie'], positiveRate: 0.96, reviewCount: 12 },
-  { name: 'Animal Well', summary: 'A mysterious pixel-art Metroidvania.', developer: 'Shared Memory', publisher: 'Bigmode', releaseDate: '2024-05-09', platforms: ['pc', 'ps5', 'switch'], genres: ['adventure', 'indie'], positiveRate: 0.94, reviewCount: 7 },
-  { name: 'Balatro', summary: 'A poker roguelike that should not be this addictive.', developer: 'LocalThunk', publisher: 'Playstack', releaseDate: '2024-02-20', platforms: ['pc', 'switch', 'ps5', 'xbox-series', 'ios', 'android'], genres: ['strategy', 'indie'], positiveRate: 0.97, reviewCount: 9 },
-  { name: 'Pacific Drive', summary: 'A first-person driving survival game through a haunted exclusion zone.', developer: 'Ironwood Studios', publisher: 'Kepler Interactive', releaseDate: '2024-02-22', platforms: ['pc', 'ps5'], genres: ['adventure', 'indie'], positiveRate: 0.88, reviewCount: 4 },
+  { name: 'Elden Ring', summary: 'An open-world action RPG from FromSoftware.', developer: 'FromSoftware', publisher: 'Bandai Namco', releaseDate: '2022-02-25', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['action', 'rpg'], positiveRate: 0.94, reviewCount: 86, steamAppId: 1245620 },
+  { name: 'The Witcher 3: Wild Hunt', summary: 'A sprawling fantasy RPG about a monster hunter and his choices.', developer: 'CD Projekt Red', publisher: 'CD Projekt', releaseDate: '2015-05-19', platforms: ['pc', 'ps5', 'xbox-series', 'switch'], genres: ['rpg', 'adventure'], positiveRate: 0.96, reviewCount: 72, steamAppId: 292030 },
+  { name: 'Hades', summary: 'A rogue-like dungeon crawler where you fight to escape the Underworld.', developer: 'Supergiant Games', publisher: 'Supergiant Games', releaseDate: '2020-09-17', platforms: ['pc', 'switch', 'ps5', 'xbox-series'], genres: ['action', 'indie'], positiveRate: 0.98, reviewCount: 54, steamAppId: 1145360 },
+  { name: 'Stardew Valley', summary: 'A farming sim about rebuilding a life in the countryside.', developer: 'ConcernedApe', publisher: 'ConcernedApe', releaseDate: '2016-02-26', platforms: ['pc', 'switch', 'ps4', 'xbox-one', 'ios', 'android'], genres: ['simulation', 'indie'], positiveRate: 0.97, reviewCount: 61, steamAppId: 413150 },
+  { name: 'Baldur\'s Gate 3', summary: 'A critically acclaimed RPG built on D&D 5e.', developer: 'Larian Studios', publisher: 'Larian Studios', releaseDate: '2023-08-03', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['rpg', 'adventure'], positiveRate: 0.96, reviewCount: 70, steamAppId: 1086940 },
+  { name: 'Celeste', summary: 'A precise platformer about climbing a mountain and yourself.', developer: 'Maddy Makes Games', publisher: 'Maddy Makes Games', releaseDate: '2018-01-25', platforms: ['pc', 'switch', 'ps4', 'xbox-one'], genres: ['platformer', 'indie'], positiveRate: 0.97, reviewCount: 40, steamAppId: 504230 },
+  { name: 'Disco Elysium', summary: 'A detective RPG where skills argue with you.', developer: 'ZA/UM', publisher: 'ZA/UM', releaseDate: '2019-10-15', platforms: ['pc', 'ps5', 'xbox-series', 'switch'], genres: ['rpg', 'adventure'], positiveRate: 0.93, reviewCount: 38, steamAppId: 632470 },
+  { name: 'Hollow Knight', summary: 'A haunting action-adventure through a ruined insect kingdom.', developer: 'Team Cherry', publisher: 'Team Cherry', releaseDate: '2017-02-24', platforms: ['pc', 'switch', 'ps4', 'xbox-one'], genres: ['action', 'adventure', 'indie'], positiveRate: 0.95, reviewCount: 44, steamAppId: 367520 },
+  { name: 'Portal 2', summary: 'A co-op puzzle game that still has the best jokes in games.', developer: 'Valve', publisher: 'Valve', releaseDate: '2011-04-19', platforms: ['pc', 'ps4', 'xbox-one'], genres: ['adventure'], positiveRate: 0.99, reviewCount: 33, steamAppId: 620 },
+  { name: 'Red Dead Redemption 2', summary: 'An enormous western about the end of an outlaw era.', developer: 'Rockstar Games', publisher: 'Rockstar Games', releaseDate: '2018-10-26', platforms: ['pc', 'ps4', 'xbox-one'], genres: ['action', 'adventure'], positiveRate: 0.9, reviewCount: 48, steamAppId: 1174180 },
+  { name: 'Cyberpunk 2077', summary: 'A night city RPG that recovered from a disastrous launch.', developer: 'CD Projekt Red', publisher: 'CD Projekt', releaseDate: '2020-12-10', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['rpg', 'action'], positiveRate: 0.78, reviewCount: 55, steamAppId: 1091500 },
+  { name: 'Starfield', summary: 'A vast space RPG with as much busywork as wonder.', developer: 'Bethesda Game Studios', publisher: 'Bethesda Softworks', releaseDate: '2023-09-06', platforms: ['pc', 'xbox-series'], genres: ['rpg', 'adventure'], positiveRate: 0.62, reviewCount: 42, steamAppId: 1716740 },
+  { name: 'Assassin\'s Creed Valhalla', summary: 'A very long Viking action RPG.', developer: 'Ubisoft Montreal', publisher: 'Ubisoft', releaseDate: '2020-11-10', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['action', 'rpg'], positiveRate: 0.68, reviewCount: 36, steamAppId: 2208920 },
+  { name: 'FIFA 23', summary: 'The annual football sim, for better and worse.', developer: 'EA Sports', publisher: 'Electronic Arts', releaseDate: '2022-09-30', platforms: ['pc', 'ps5', 'xbox-series', 'switch'], genres: ['sports'], positiveRate: 0.41, reviewCount: 28, steamAppId: 1811260 },
+  { name: 'Concord', summary: 'A hero shooter that did not find an audience.', developer: 'Firewalk Studios', publisher: 'Sony Interactive Entertainment', releaseDate: '2024-08-23', platforms: ['pc', 'ps5'], genres: ['shooter'], positiveRate: 0.12, reviewCount: 24, steamAppId: 2091600 },
+  { name: 'The Day Before', summary: 'An extraction shooter remembered mostly for what it was not.', developer: 'Fntastic', publisher: 'Mytona', releaseDate: '2023-12-07', platforms: ['pc'], genres: ['shooter'], positiveRate: 0.08, reviewCount: 18, steamAppId: 1372880 },
+  { name: 'Skull and Bones', summary: 'A pirate MMO that arrived years late.', developer: 'Ubisoft Singapore', publisher: 'Ubisoft', releaseDate: '2024-02-16', platforms: ['pc', 'ps5', 'xbox-series'], genres: ['action', 'adventure'], positiveRate: 0.34, reviewCount: 22, steamAppId: 1987080 },
+  { name: 'Outer Wilds', summary: 'A time-loop exploration game people refuse to spoil.', developer: 'Mobius Digital', publisher: 'Annapurna Interactive', releaseDate: '2019-05-30', platforms: ['pc', 'ps4', 'xbox-one', 'switch'], genres: ['adventure', 'indie'], positiveRate: 0.96, reviewCount: 12, steamAppId: 753640 },
+  { name: 'Animal Well', summary: 'A mysterious pixel-art Metroidvania.', developer: 'Shared Memory', publisher: 'Bigmode', releaseDate: '2024-05-09', platforms: ['pc', 'ps5', 'switch'], genres: ['adventure', 'indie'], positiveRate: 0.94, reviewCount: 7, steamAppId: 813450 },
+  { name: 'Balatro', summary: 'A poker roguelike that should not be this addictive.', developer: 'LocalThunk', publisher: 'Playstack', releaseDate: '2024-02-20', platforms: ['pc', 'switch', 'ps5', 'xbox-series', 'ios', 'android'], genres: ['strategy', 'indie'], positiveRate: 0.97, reviewCount: 9, steamAppId: 2379780 },
+  { name: 'Pacific Drive', summary: 'A first-person driving survival game through a haunted exclusion zone.', developer: 'Ironwood Studios', publisher: 'Kepler Interactive', releaseDate: '2024-02-22', platforms: ['pc', 'ps5'], genres: ['adventure', 'indie'], positiveRate: 0.88, reviewCount: 4, steamAppId: 1347750 },
   { name: 'Zero Dawn Protocol', summary: 'A live-service extraction shooter that attracted a coordinated review campaign.', developer: 'Northwind Interactive', publisher: 'Northwind Interactive', releaseDate: '2024-11-12', platforms: ['pc', 'ps5'], genres: ['shooter', 'action'], positiveRate: 0.71, reviewCount: 40, bomb: true },
   { name: 'Neon Orchard', summary: 'A tiny narrative game with a single passionate review.', developer: 'Lumen Fold', publisher: 'Lumen Fold', releaseDate: '2025-03-04', platforms: ['pc'], genres: ['adventure', 'indie'], positiveRate: 1, reviewCount: 1 },
 ];
@@ -168,6 +179,8 @@ async function main(): Promise<void> {
 
   for (const spec of GAMES) {
     const slug = slugify(spec.name);
+    const coverImageUrl = spec.steamAppId ? steamCoverUrl(spec.steamAppId) : null;
+    const bannerImageUrl = spec.steamAppId ? steamBannerUrl(spec.steamAppId) : null;
     const game = await prisma.game.upsert({
       where: { slug },
       update: {
@@ -176,6 +189,8 @@ async function main(): Promise<void> {
         developer: spec.developer,
         publisher: spec.publisher,
         releaseDate: new Date(spec.releaseDate),
+        coverImageUrl,
+        bannerImageUrl,
       },
       create: {
         slug,
@@ -184,8 +199,8 @@ async function main(): Promise<void> {
         developer: spec.developer,
         publisher: spec.publisher,
         releaseDate: new Date(spec.releaseDate),
-        coverImageUrl: `https://placehold.co/264x352/141922/8b6dff/png?text=${encodeURIComponent(spec.name)}`,
-        bannerImageUrl: `https://placehold.co/1200x500/0b0e14/8b6dff/png?text=${encodeURIComponent(spec.name)}`,
+        coverImageUrl,
+        bannerImageUrl,
         platforms: {
           create: spec.platforms.map((platformSlug) => ({
             platformId: platformBySlug.get(platformSlug)!.id,

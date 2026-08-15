@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { slugify, uniqueSlug, type PlatformFamily } from '@gamescore/shared';
 import type { ImportGameResultDto } from '@gamescore/types';
+import type { GameRelationKind } from '@prisma/client';
 
 import { BadRequestError, NotFoundError } from '../../../common/errors/app.exception';
 import { ERROR_CODES } from '../../../common/errors/error-codes';
@@ -8,6 +9,9 @@ import { PrismaService } from '../../../common/prisma/prisma.service';
 import { GameRepository } from '../../games/repositories/game.repository';
 import { CdnImageProvider } from '../images/image-provider';
 import { IgdbClient, type IgdbGame } from '../igdb/igdb.client';
+
+/** Cap per kind to avoid IGDB rate-limit spikes on titles with huge DLC catalogues. */
+const MAX_RELATIONS_PER_KIND = 20;
 
 const PLATFORM_FAMILY: Record<string, PlatformFamily> = {
   pc: 'PC',
@@ -137,6 +141,14 @@ export class GameImportService {
       },
     });
 
+    // If this title was already listed as someone else's DLC/expansion, point those rows here.
+    await this.prisma.gameRelation.updateMany({
+      where: { provider: 'IGDB', externalId, relatedGameId: null },
+      data: { relatedGameId: game.id },
+    });
+
+    await this.syncRelations(game.id, payload);
+
     return {
       gameId: game.id,
       slug: game.slug,
@@ -146,6 +158,106 @@ export class GameImportService {
       created: true,
       warnings,
     };
+  }
+
+  /**
+   * Upserts DLC / expansion metadata for a local game. Does not import child
+   * games into the catalogue — only relation rows (and `relatedGameId` when
+   * the child was already imported separately).
+   */
+  async syncRelations(gameId: string, payload: IgdbGame): Promise<void> {
+    const dlcIds = (payload.dlcs ?? []).filter((id) => Number.isFinite(id)).slice(0, MAX_RELATIONS_PER_KIND);
+    const expansionIds = (payload.expansions ?? [])
+      .filter((id) => Number.isFinite(id))
+      .slice(0, MAX_RELATIONS_PER_KIND);
+
+    const allIds = [...new Set([...dlcIds, ...expansionIds])];
+    const details = allIds.length > 0 ? await this.igdb.getGamesByIds(allIds) : [];
+    const byId = new Map(details.map((row) => [row.id, row]));
+
+    const externalIds = allIds.map(String);
+    const sources =
+      externalIds.length === 0
+        ? []
+        : await this.prisma.gameExternalSource.findMany({
+            where: { provider: 'IGDB', externalId: { in: externalIds } },
+            select: { externalId: true, gameId: true },
+          });
+    const localByExternal = new Map(sources.map((row) => [row.externalId, row.gameId]));
+
+    type RelationRow = {
+      kind: GameRelationKind;
+      externalId: string;
+      name: string;
+      coverImageUrl: string | null;
+      releaseDate: Date | null;
+      relatedGameId: string | null;
+    };
+
+    const rows: RelationRow[] = [];
+    const pushKind = (ids: number[], kind: GameRelationKind) => {
+      for (const id of ids) {
+        const detail = byId.get(id);
+        if (!detail?.name?.trim()) continue;
+        const externalId = String(id);
+        rows.push({
+          kind,
+          externalId,
+          name: detail.name.trim().slice(0, 255),
+          coverImageUrl: this.images.coverUrl(detail.cover?.url ?? null),
+          releaseDate: detail.first_release_date
+            ? new Date(detail.first_release_date * 1000)
+            : null,
+          relatedGameId: localByExternal.get(externalId) ?? null,
+        });
+      }
+    };
+    pushKind(dlcIds, 'DLC');
+    pushKind(expansionIds, 'EXPANSION');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.gameRelation.deleteMany({
+        where: {
+          gameId,
+          provider: 'IGDB',
+          kind: { in: ['DLC', 'EXPANSION'] },
+          ...(rows.length > 0
+            ? {
+                NOT: {
+                  OR: rows.map((row) => ({
+                    externalId: row.externalId,
+                    kind: row.kind,
+                  })),
+                },
+              }
+            : {}),
+        },
+      });
+
+      for (const row of rows) {
+        await tx.gameRelation.upsert({
+          where: {
+            gameId_provider_externalId_kind: {
+              gameId,
+              provider: 'IGDB',
+              externalId: row.externalId,
+              kind: row.kind,
+            },
+          },
+          create: {
+            gameId,
+            provider: 'IGDB',
+            ...row,
+          },
+          update: {
+            name: row.name,
+            coverImageUrl: row.coverImageUrl,
+            releaseDate: row.releaseDate,
+            relatedGameId: row.relatedGameId,
+          },
+        });
+      }
+    });
   }
 
   map(payload: IgdbGame, warnings: string[]) {

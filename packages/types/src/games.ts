@@ -55,10 +55,36 @@ export interface GameDetailDto extends GameSummaryDto {
   viewerReviewId: string | null;
   /** True when at least one unresolved review bomb event exists. */
   hasReviewBombEvents: boolean;
+  /** DLCs / expansions linked via IGDB (metadata only until imported). */
+  related: GameRelatedItemDto[];
+}
+
+export type GameRelationKind = 'DLC' | 'EXPANSION' | 'BUNDLE' | 'SIMILAR';
+
+export interface GameRelatedItemDto {
+  kind: GameRelationKind;
+  provider: 'IGDB';
+  externalId: string;
+  name: string;
+  coverImageUrl: string | null;
+  releaseDate: string | null;
+  /** Local catalogue slug when this related title is already imported. */
+  localSlug: string | null;
 }
 
 export interface PlatformScoreDto {
   platform: PlatformDto;
+  totalReviews: number;
+  positiveReviews: number;
+  negativeReviews: number;
+  positivePercentage: number;
+  confidenceScore: number;
+  label: ScoreLabel;
+}
+
+/** Aggregated Wilson score for a platform family (PC, PlayStation, …). */
+export interface PlatformFamilyScoreDto {
+  family: PlatformFamily;
   totalReviews: number;
   positiveReviews: number;
   negativeReviews: number;
@@ -95,6 +121,8 @@ export interface GameStatisticsDto {
    */
   scoreExcludingReviewBombs: GameScoreDto | null;
   platforms: PlatformScoreDto[];
+  /** Platform rows rolled up by `Platform.family`. */
+  families: PlatformFamilyScoreDto[];
   timeline: ReviewTimelinePointDto[];
   reviewBombEvents: ReviewBombEventSummaryDto[];
   hoursPlayedDistribution: HoursPlayedBucketDto[];

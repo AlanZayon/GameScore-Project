@@ -1,17 +1,19 @@
 import { calculateGameScore, resolveScoreLabel, type ScoreLabel } from '@gamescore/shared';
 import type {
   GameDetailDto,
+  GameRelatedItemDto,
   GameScoreDto,
   GameSummaryDto,
   GenreDto,
   PlatformDto,
 } from '@gamescore/types';
-import type { Game, GameStatistics, Genre, Platform } from '@prisma/client';
+import type { Game, GameRelation, GameStatistics, Genre, Platform } from '@prisma/client';
 
 export type GameWithRelations = Game & {
   platforms: Array<{ platformId: string; platform: Platform }>;
   genres: Array<{ genre: Genre }>;
   statistics: GameStatistics | null;
+  relations?: Array<GameRelation & { relatedGame: { slug: string } | null }>;
 };
 
 export function toPlatformDto(platform: Platform): PlatformDto {
@@ -106,6 +108,21 @@ export function toGameDetailDto(
     updatedAt: game.updatedAt.toISOString(),
     viewerReviewId: extras.viewerReviewId,
     hasReviewBombEvents: extras.hasReviewBombEvents,
+    related: (game.relations ?? []).map(toGameRelatedItemDto),
+  };
+}
+
+function toGameRelatedItemDto(
+  row: GameRelation & { relatedGame: { slug: string } | null },
+): GameRelatedItemDto {
+  return {
+    kind: row.kind,
+    provider: 'IGDB',
+    externalId: row.externalId,
+    name: row.name,
+    coverImageUrl: row.coverImageUrl,
+    releaseDate: row.releaseDate ? row.releaseDate.toISOString().slice(0, 10) : null,
+    localSlug: row.relatedGame?.slug ?? null,
   };
 }
 

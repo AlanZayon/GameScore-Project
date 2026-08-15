@@ -85,7 +85,28 @@
     "title": "Jogo",
     "reviews": "Avaliações",
     "noReviews": "Ainda não há avaliações.",
-    "byPlatform": "Por plataforma"
+    "byPlatform": "Por plataforma",
+    "timelineTitle": "Evolução das avaliações",
+    "timelineEmpty": "Ainda não há atividade diária suficiente para o gráfico.",
+    "timelinePositive": "Recomendam",
+    "timelineNegative": "Não recomendam",
+    "timelineHint": "Passe o cursor sobre o gráfico para ver o dia.",
+    "platformCompareTitle": "Comparação por plataforma",
+    "platformCompareEmpty": "Poucas avaliações com plataforma informada ainda.",
+    "compareByFamily": "Por família",
+    "compareByPlatform": "Por plataforma",
+    "relatedTitle": "DLCs e expansões",
+    "relatedEmpty": "Nenhum DLC ou expansão vinculado a este jogo.",
+    "relatedDlc": "DLC",
+    "relatedExpansion": "Expansão",
+    "families": {
+      "PC": "PC",
+      "PLAYSTATION": "PlayStation",
+      "XBOX": "Xbox",
+      "NINTENDO": "Nintendo",
+      "MOBILE": "Mobile",
+      "OTHER": "Outras"
+    }
   },
   "reviews": {
     "recommended": "Recomenda",

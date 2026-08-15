@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { calculateGameScore } from '@gamescore/shared';
+import { calculateGameScore, PLATFORM_FAMILIES, type PlatformFamily } from '@gamescore/shared';
 import type {
   GameStatisticsDto,
   HoursPlayedBucketDto,
+  PlatformFamilyScoreDto,
   PlatformScoreDto,
   ReviewBombEventSummaryDto,
   ReviewTimelinePointDto,
@@ -22,6 +23,8 @@ const HOURS_BUCKETS: Array<{ bucket: string; min: number; max: number | null }> 
   { bucket: '10-50', min: 10, max: 50 },
   { bucket: '50+', min: 50, max: null },
 ];
+
+const FAMILY_ORDER: PlatformFamily[] = [...PLATFORM_FAMILIES];
 
 @Injectable()
 export class StatisticsService {
@@ -103,6 +106,8 @@ export class StatisticsService {
       };
     });
 
+    const families = this.aggregateFamilies(platforms, minimum);
+
     const timelinePoints: ReviewTimelinePointDto[] = timeline.map((day) => ({
       date: isoDate(day.date),
       positive: day.positiveCount,
@@ -152,10 +157,48 @@ export class StatisticsService {
           }
         : null,
       platforms,
+      families,
       timeline: timelinePoints,
       reviewBombEvents,
       hoursPlayedDistribution,
       lastCalculatedAt: stats?.lastCalculatedAt.toISOString() ?? new Date().toISOString(),
     };
+  }
+
+  /** Roll up already-filtered platform rows by family and recompute Wilson. */
+  private aggregateFamilies(
+    platforms: PlatformScoreDto[],
+    minimumReviews: number,
+  ): PlatformFamilyScoreDto[] {
+    const buckets = new Map<PlatformFamily, { positive: number; negative: number }>();
+    for (const row of platforms) {
+      const family = row.platform.family;
+      const current = buckets.get(family) ?? { positive: 0, negative: 0 };
+      current.positive += row.positiveReviews;
+      current.negative += row.negativeReviews;
+      buckets.set(family, current);
+    }
+
+    return FAMILY_ORDER.flatMap((family) => {
+      const bucket = buckets.get(family);
+      if (!bucket) return [];
+      const total = bucket.positive + bucket.negative;
+      if (total < this.config.ranking.platformMinimumReviews) return [];
+      const scored = calculateGameScore(
+        { positive: bucket.positive, negative: bucket.negative },
+        minimumReviews,
+      );
+      return [
+        {
+          family,
+          totalReviews: scored.totalReviews,
+          positiveReviews: scored.positiveReviews,
+          negativeReviews: scored.negativeReviews,
+          positivePercentage: scored.positivePercentage,
+          confidenceScore: scored.confidenceScore,
+          label: scored.label,
+        },
+      ];
+    });
   }
 }

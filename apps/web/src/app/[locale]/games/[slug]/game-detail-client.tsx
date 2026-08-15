@@ -1,19 +1,32 @@
 'use client';
 
-import type { CursorPaginatedResponse, GameDetailDto, GameStatisticsDto, ReviewDto } from '@gamescore/types';
+import type {
+  CursorPaginatedResponse,
+  GameDetailDto,
+  GameRelatedItemDto,
+  GameStatisticsDto,
+  ReviewDto,
+} from '@gamescore/types';
 import { REVIEW_SORTS } from '@gamescore/shared';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+import { GameCover } from '@/components/game/game-cover';
+import { PlatformComparison } from '@/components/game/platform-comparison';
 import { ReviewCard } from '@/components/game/review-card';
 import { ReviewForm } from '@/components/game/review-form';
+import { ReviewTimelineChart } from '@/components/game/review-timeline-chart';
 import { ScorePanel } from '@/components/game/score-panel';
-import { GameCover } from '@/components/game/game-cover';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/misc';
 import { Link } from '@/i18n/navigation';
 import { apiFetch, qs } from '@/lib/api';
+
+function relatedHref(item: GameRelatedItemDto): string {
+  if (item.localSlug) return `/games/${item.localSlug}`;
+  return `/games/ext/${item.externalId}`;
+}
 
 export function GameDetailClient({
   initialGame,
@@ -46,11 +59,19 @@ export function GameDetailClient({
     setReviews(nextReviews);
   }
 
+  const related = game.related ?? [];
+
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex gap-5">
-          <GameCover name={game.name} src={game.coverImageUrl} className="h-48 w-36 shrink-0 rounded-card" sizes="144px" priority />
+          <GameCover
+            name={game.name}
+            src={game.coverImageUrl}
+            className="h-48 w-36 shrink-0 rounded-card"
+            sizes="144px"
+            priority
+          />
           <div className="space-y-3">
             <h1 className="text-3xl font-bold">{game.name}</h1>
             <p className="text-content-muted">{game.summary}</p>
@@ -80,6 +101,48 @@ export function GameDetailClient({
             </Link>
           </p>
         ) : null}
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">{t('timelineTitle')}</h2>
+          <ReviewTimelineChart timeline={stats.timeline} />
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">{t('platformCompareTitle')}</h2>
+          <PlatformComparison platforms={stats.platforms} families={stats.families ?? []} />
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">{t('relatedTitle')}</h2>
+          {related.length === 0 ? (
+            <EmptyState title={t('relatedEmpty')} />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {related.map((item) => (
+                <Link
+                  key={`${item.kind}:${item.externalId}`}
+                  href={relatedHref(item)}
+                  className="flex gap-3 rounded-card border border-border-subtle bg-surface p-3 transition hover:border-brand/40 hover:bg-surface-hover"
+                >
+                  <GameCover
+                    name={item.name}
+                    src={item.coverImageUrl}
+                    className="h-20 w-14 shrink-0 rounded-md"
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <Badge tone="brand">
+                      {item.kind === 'EXPANSION' ? t('relatedExpansion') : t('relatedDlc')}
+                    </Badge>
+                    <p className="truncate font-medium">{item.name}</p>
+                    {item.releaseDate ? (
+                      <p className="text-xs text-content-subtle">{item.releaseDate.slice(0, 4)}</p>
+                    ) : null}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -114,19 +177,6 @@ export function GameDetailClient({
 
       <aside className="space-y-4">
         <ScorePanel score={game.score} />
-        {stats.platforms.length > 0 ? (
-          <div className="rounded-card border border-border-subtle bg-surface p-4">
-            <h3 className="mb-3 font-semibold">{t('byPlatform')}</h3>
-            <ul className="space-y-2 text-sm">
-              {stats.platforms.map((row) => (
-                <li key={row.platform.id} className="flex justify-between">
-                  <span>{row.platform.abbreviation}</span>
-                  <span>{Math.round(row.positivePercentage)}%</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
       </aside>
     </div>
   );

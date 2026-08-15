@@ -86,6 +86,13 @@ enum PlatformFamily {
   OTHER
 }
 
+enum GameRelationKind {
+  DLC
+  EXPANSION
+  BUNDLE
+  SIMILAR
+}
+
 enum ReputationReason {
   USEFUL_VOTE_RECEIVED
   NOT_USEFUL_VOTE_RECEIVED
@@ -254,12 +261,43 @@ model Game {
   snapshots         GameScoreSnapshot[]
   externalSources   GameExternalSource[]
   reviewBombEvents  ReviewBombEvent[]
+  relations         GameRelation[]  @relation("GameRelationsOwner")
+  relatedOf         GameRelation[]  @relation("GameRelationsTarget")
 
   @@index([name])
   @@index([releaseDate(sort: Desc)])
   @@index([createdAt(sort: Desc)])
   @@index([searchVector], type: Gin)
   @@map("games")
+}
+
+/// IGDB (or other provider) child titles linked to a local game — DLC, expansions,
+/// etc. Metadata is stored so the page can list them without calling IGDB on every
+/// view; `relatedGameId` is filled when the child is already in the catalogue.
+model GameRelation {
+  id     String @id @default(uuid()) @db.Uuid
+  gameId String @db.Uuid
+
+  kind       GameRelationKind
+  provider   ExternalProvider
+  externalId String           @db.VarChar(100)
+
+  name          String  @db.VarChar(255)
+  coverImageUrl String? @db.VarChar(1000)
+  releaseDate   DateTime? @db.Date
+
+  relatedGameId String? @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  game        Game  @relation("GameRelationsOwner", fields: [gameId], references: [id], onDelete: Cascade)
+  relatedGame Game? @relation("GameRelationsTarget", fields: [relatedGameId], references: [id], onDelete: SetNull)
+
+  @@unique([gameId, provider, externalId, kind])
+  @@index([gameId, kind])
+  @@index([relatedGameId])
+  @@map("game_relations")
 }
 
 model GamePlatform {

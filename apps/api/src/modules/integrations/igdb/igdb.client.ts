@@ -39,8 +39,25 @@ export interface IgdbGame {
   involved_companies?: IgdbInvolvedCompany[];
   genres?: IgdbNamed[];
   platforms?: IgdbNamed[];
+  /** IGDB game ids of DLCs. */
+  dlcs?: number[];
+  /** IGDB game ids of expansions. */
+  expansions?: number[];
   updated_at?: number;
 }
+
+/** Lightweight row used when resolving DLC / expansion metadata in batch. */
+export interface IgdbRelatedGame {
+  id: number;
+  name?: string;
+  cover?: IgdbCover;
+  first_release_date?: number;
+}
+
+const GAME_DETAIL_FIELDS =
+  'id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation,dlcs,expansions';
+
+const RELATED_GAME_FIELDS = 'id,name,cover.url,first_release_date';
 
 interface CachedToken {
   accessToken: string;
@@ -67,7 +84,7 @@ export class IgdbClient {
 
     const rows = await this.query<IgdbGame>(
       'games',
-      `fields id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation; where id = ${numeric}; limit 1;`,
+      `fields ${GAME_DETAIL_FIELDS}; where id = ${numeric}; limit 1;`,
     );
     return rows[0] ?? null;
   }
@@ -77,7 +94,17 @@ export class IgdbClient {
     const capped = Math.min(25, Math.max(1, Math.trunc(limit)));
     return this.query<IgdbGame>(
       'games',
-      `search "${escaped}"; fields id,name,slug,summary,storyline,first_release_date,updated_at,cover.url,screenshots.url,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name,platforms.name,platforms.abbreviation; limit ${capped};`,
+      `search "${escaped}"; fields ${GAME_DETAIL_FIELDS}; limit ${capped};`,
+    );
+  }
+
+  /** Batch-fetch name/cover/release for related IGDB ids (max 40 per call). */
+  async getGamesByIds(ids: number[]): Promise<IgdbRelatedGame[]> {
+    const unique = [...new Set(ids.filter((id) => Number.isFinite(id) && id > 0))].slice(0, 40);
+    if (unique.length === 0) return [];
+    return this.query<IgdbRelatedGame>(
+      'games',
+      `fields ${RELATED_GAME_FIELDS}; where id = (${unique.join(',')}); limit ${unique.length};`,
     );
   }
 

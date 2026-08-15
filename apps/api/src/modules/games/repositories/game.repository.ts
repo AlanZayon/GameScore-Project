@@ -11,6 +11,15 @@ export const gameCardInclude = {
   statistics: true,
 } satisfies Prisma.GameInclude;
 
+export const gameDetailInclude = {
+  ...gameCardInclude,
+  relations: {
+    where: { kind: { in: ['DLC', 'EXPANSION'] } },
+    include: { relatedGame: { select: { slug: true } } },
+    orderBy: [{ kind: 'asc' as const }, { name: 'asc' as const }],
+  },
+} satisfies Prisma.GameInclude;
+
 export interface ListGamesFilters {
   platformSlug?: string;
   genreSlug?: string;
@@ -60,7 +69,7 @@ export class GameRepository {
   async findBySlug(slug: string, tx?: PrismaTransaction): Promise<GameWithRelations | null> {
     return this.client(tx).game.findUnique({
       where: { slug },
-      include: gameCardInclude,
+      include: gameDetailInclude,
     });
   }
 

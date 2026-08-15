@@ -85,7 +85,28 @@
     "title": "Game",
     "reviews": "Reviews",
     "noReviews": "No reviews yet.",
-    "byPlatform": "By platform"
+    "byPlatform": "By platform",
+    "timelineTitle": "Review activity over time",
+    "timelineEmpty": "Not enough daily activity to chart yet.",
+    "timelinePositive": "Recommended",
+    "timelineNegative": "Not recommended",
+    "timelineHint": "Hover the chart to see a day.",
+    "platformCompareTitle": "Platform comparison",
+    "platformCompareEmpty": "Too few reviews with a platform selected.",
+    "compareByFamily": "By family",
+    "compareByPlatform": "By platform",
+    "relatedTitle": "DLCs and expansions",
+    "relatedEmpty": "No DLCs or expansions linked to this game.",
+    "relatedDlc": "DLC",
+    "relatedExpansion": "Expansion",
+    "families": {
+      "PC": "PC",
+      "PLAYSTATION": "PlayStation",
+      "XBOX": "Xbox",
+      "NINTENDO": "Nintendo",
+      "MOBILE": "Mobile",
+      "OTHER": "Other"
+    }
   },
   "reviews": {
     "recommended": "Recommended",

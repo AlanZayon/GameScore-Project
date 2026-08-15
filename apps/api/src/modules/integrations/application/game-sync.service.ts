@@ -62,6 +62,7 @@ export class GameSyncService {
         rawPayload: payload as object,
       },
     });
+    await this.importer.syncRelations(gameId, payload);
 
     return {
       gameId,

@@ -33,6 +33,13 @@ export async function generateMetadata({
     },
     description: t('metaDescription'),
     applicationName: 'GameScore',
+    icons: {
+      icon: [
+        { url: '/icon', type: 'image/png', sizes: '32x32' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
+      ],
+      apple: [{ url: '/apple-icon', type: 'image/png', sizes: '180x180' }],
+    },
     alternates: {
       canonical: '/',
       languages: {

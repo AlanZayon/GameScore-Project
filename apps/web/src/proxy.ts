@@ -9,6 +9,10 @@ import { routing } from './i18n/routing';
 export default createMiddleware(routing);
 
 export const config = {
-  // Everything except Next internals, API routes and files with an extension.
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  // Skip Next internals, API routes, metadata icons, and any path with a file
+  // extension. Without the icon exclusions, `/icon` is treated as a locale
+  // route and the favicon 404s while the HTML still links to it.
+  matcher: [
+    '/((?!api|_next|_vercel|icon|apple-icon|favicon\\.ico|robots\\.txt|sitemap|manifest|.*\\..*).*)',
+  ],
 };

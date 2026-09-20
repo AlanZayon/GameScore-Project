@@ -1,21 +1,55 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Query } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUrl, Length, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import type {
   AccountExport,
   AuthenticatedUser,
   CursorPaginatedResponse,
+  ReputationEventDto,
   ReviewDto,
   UserProfile,
+  UserStatisticsDto,
+  UserStatisticsRange,
 } from '@gamescore/types';
 
 import { Authenticated, OptionalAuth } from '../auth/decorators/auth.decorators';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/domain/auth-user';
 import { UsersService } from './application/users.service';
+import { UserStatisticsService } from './application/user-statistics.service';
 
 class UserReviewsQueryDto {
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number = 20;
+}
+
+class UserStatisticsQueryDto {
+  @IsOptional()
+  @IsIn(['3m', '12m', 'all'])
+  range?: UserStatisticsRange = 'all';
+}
+
+class ReputationEventsQueryDto {
   @IsOptional()
   @IsString()
   cursor?: string;
@@ -60,7 +94,10 @@ class DeleteAccountDto {
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly statistics: UserStatisticsService,
+  ) {}
 
   @Get('me/export')
   @Authenticated()
@@ -94,6 +131,30 @@ export class UsersController {
   @ApiOkResponse({ description: 'Profile' })
   getProfile(@Param('username') username: string): Promise<UserProfile> {
     return this.users.getProfile(username);
+  }
+
+  @Get(':username/statistics')
+  @OptionalAuth()
+  @ApiOperation({ summary: 'Public analytics for a player profile' })
+  @ApiOkResponse({ description: 'Profile statistics' })
+  getStatistics(
+    @Param('username') username: string,
+    @Query() query: UserStatisticsQueryDto,
+    @CurrentUser() viewer: AuthUser | null,
+  ): Promise<UserStatisticsDto> {
+    return this.statistics.getStatistics(username, query.range ?? 'all', viewer);
+  }
+
+  @Get(':username/reputation-events')
+  @OptionalAuth()
+  @ApiOperation({ summary: 'Paginated reputation ledger for a player' })
+  @ApiOkResponse({ description: 'Reputation events' })
+  listReputationEvents(
+    @Param('username') username: string,
+    @Query() query: ReputationEventsQueryDto,
+    @CurrentUser() viewer: AuthUser | null,
+  ): Promise<CursorPaginatedResponse<ReputationEventDto>> {
+    return this.statistics.listReputationEvents(username, query.cursor, query.limit, viewer);
   }
 
   @Get(':username/reviews')

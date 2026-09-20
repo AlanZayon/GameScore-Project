@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { AdSlot } from '@/components/ads/ad-slot';
 import { GameCard } from '@/components/game/game-card';
 import { GameCover } from '@/components/game/game-cover';
 import { EmptyState, ErrorState } from '@/components/ui/misc';
@@ -67,24 +68,27 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {failed ? <ErrorState title={t('emptySection')} /> : null}
 
-      {sections.map((section) => (
-        <section key={section.key} className="space-y-4">
-          <div className="flex items-end justify-between">
-            <h2 className="text-2xl font-semibold">{t(section.key)}</h2>
-            <Link href={section.href} className="text-sm text-brand hover:underline">
-              {common('seeAll')}
-            </Link>
-          </div>
-          {section.games.length === 0 ? (
-            <EmptyState title={t('emptySection')} />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {section.games.map((game, index) => (
-                <GameCard key={game.id} game={game} priority={section.key === 'popular' && index === 0} />
-              ))}
+      {sections.map((section, sectionIndex) => (
+        <div key={section.key} className="space-y-12">
+          {sectionIndex === 1 ? <AdSlot format="horizontal" label="home-mid" /> : null}
+          <section className="space-y-4">
+            <div className="flex items-end justify-between">
+              <h2 className="text-2xl font-semibold">{t(section.key)}</h2>
+              <Link href={section.href} className="text-sm text-brand hover:underline">
+                {common('seeAll')}
+              </Link>
             </div>
-          )}
-        </section>
+            {section.games.length === 0 ? (
+              <EmptyState title={t('emptySection')} />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {section.games.map((game, index) => (
+                  <GameCard key={game.id} game={game} priority={section.key === 'popular' && index === 0} />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       ))}
 
       {feed.recentReviews.length > 0 ? (

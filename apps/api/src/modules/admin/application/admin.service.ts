@@ -256,6 +256,7 @@ export class AdminService {
     });
     await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
+    await this.reputation.invalidateUserStats(review.userId);
   }
 
   async restoreReview(id: string, actor: AuthUser): Promise<ReviewDto> {
@@ -355,6 +356,8 @@ export class AdminService {
       throw new ConflictError(ERROR_CODES.REPORT_ALREADY_RESOLVED, 'Report already resolved');
     }
 
+    let affectedUserId: string | null = null;
+
     await this.prisma.$transaction(async (tx) => {
       await tx.reviewReport.update({
         where: { id },
@@ -369,6 +372,7 @@ export class AdminService {
       if (input.hideReview && input.status === 'RESOLVED') {
         const review = await this.reviews.findById(report.reviewId, tx);
         if (review && !review.deletedAt) {
+          affectedUserId = review.userId;
           await this.reviews.update(
             report.reviewId,
             {
@@ -397,6 +401,10 @@ export class AdminService {
         tx,
       );
     });
+
+    if (affectedUserId) {
+      await this.reputation.invalidateUserStats(affectedUserId);
+    }
   }
 
   async listReviewBombs(page?: number, limit?: number, status?: ReviewBombStatus) {

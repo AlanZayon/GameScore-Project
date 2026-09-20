@@ -23,6 +23,21 @@ A review's list position mixes Wilson usefulness, vote volume, capped author rep
 
 Deltas are recorded as `ReputationEvent` rows and clamped to 0–5000. Useful votes, published reviews, moderator removals and confirmed abuse all leave an audit trail.
 
+Public profiles expose a **tier** derived from the current score (translated in the UI):
+
+| Tier | Score |
+| --- | --- |
+| `NEWCOMER` | 0–49 |
+| `ACTIVE` | 50–199 |
+| `TRUSTED` | 200–499 |
+| `ESTABLISHED` | 500–1499 |
+| `RESPECTED` | 1500–2999 |
+| `ELITE` | 3000–5000 |
+
+The public reputation ledger shows reason, delta and date. Moderator removals and confirmed abuse are visible only to moderators/admins; visitors see a single opaque `moderationNet` adjustment when those events affect the score.
+
+Profile analytics (genre/platform breakdowns, timelines, hours) use only `PUBLISHED` non-deleted reviews, count a review in every genre of its game, put missing platforms in an `unspecified` bucket, and hide category buckets with fewer than 3 reviews.
+
 ## Review bombs
 
 Detection compares one day against the game's own 30-day median volume. A spike that is both large and one-sided writes a `ReviewBombEvent`. Nothing is deleted automatically; a moderator confirms or dismisses the window. Confirmed windows are excluded from the alternate statistics payload.

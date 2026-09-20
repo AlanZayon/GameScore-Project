@@ -6,6 +6,8 @@
  * review ranking score, and it can never become a popularity ratchet.
  */
 
+import { REVIEW_SCORE_REPUTATION_SOFT_CAP } from './review-score';
+
 export const REPUTATION_MIN = 0;
 export const REPUTATION_MAX = 5000;
 
@@ -30,6 +32,42 @@ export const REPUTATION_DELTAS = {
 
 export type ReputationReason = keyof typeof REPUTATION_DELTAS;
 
+/**
+ * Moderation penalties are hidden from the public reputation ledger.
+ * Moderators and admins still see them.
+ */
+export const SENSITIVE_REPUTATION_REASONS = [
+  'REVIEW_REMOVED_BY_MODERATOR',
+  'ABUSE_CONFIRMED',
+] as const satisfies ReadonlyArray<ReputationReason>;
+
+export type SensitiveReputationReason = (typeof SENSITIVE_REPUTATION_REASONS)[number];
+
+export function isSensitiveReputationReason(reason: string): reason is SensitiveReputationReason {
+  return (SENSITIVE_REPUTATION_REASONS as ReadonlyArray<string>).includes(reason);
+}
+
+/** Public reputation tiers shown on player profiles (translated in the UI). */
+export const REPUTATION_TIERS = [
+  'NEWCOMER',
+  'ACTIVE',
+  'TRUSTED',
+  'ESTABLISHED',
+  'RESPECTED',
+  'ELITE',
+] as const;
+
+export type ReputationTier = (typeof REPUTATION_TIERS)[number];
+
+const REPUTATION_TIER_THRESHOLDS: Array<{ tier: ReputationTier; min: number }> = [
+  { tier: 'ELITE', min: 3000 },
+  { tier: 'RESPECTED', min: 1500 },
+  { tier: 'ESTABLISHED', min: 500 },
+  { tier: 'TRUSTED', min: 200 },
+  { tier: 'ACTIVE', min: 50 },
+  { tier: 'NEWCOMER', min: 0 },
+];
+
 /** Reputation is clamped rather than allowed to run away in either direction. */
 export function clampReputation(value: number): number {
   if (!Number.isFinite(value)) return REPUTATION_MIN;
@@ -38,4 +76,21 @@ export function clampReputation(value: number): number {
 
 export function applyReputationDelta(current: number, reason: ReputationReason): number {
   return clampReputation(current + REPUTATION_DELTAS[reason]);
+}
+
+export function reputationTier(score: number): ReputationTier {
+  const clamped = clampReputation(score);
+  for (const entry of REPUTATION_TIER_THRESHOLDS) {
+    if (clamped >= entry.min) return entry.tier;
+  }
+  return 'NEWCOMER';
+}
+
+/**
+ * How much of the review-ranking reputation weight this score already earns,
+ * as a 0..1 ratio against the soft cap (500 → full weight).
+ */
+export function reputationRankingWeightRatio(score: number): number {
+  const clamped = Math.max(0, clampReputation(score));
+  return Math.min(1, clamped / REVIEW_SCORE_REPUTATION_SOFT_CAP);
 }

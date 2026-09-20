@@ -182,6 +182,7 @@ export class ReviewsService {
     });
     await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
+    await this.reputation.invalidateUserStats(author.id);
 
     const [mapped] = await this.withViewerContext([created], author.id);
     return mapped!;
@@ -258,6 +259,7 @@ export class ReviewsService {
 
     await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
+    await this.reputation.invalidateUserStats(actor.id);
     const [mapped] = await this.withViewerContext([updated], actor.id);
     return mapped!;
   }
@@ -296,6 +298,7 @@ export class ReviewsService {
 
     await this.jobs.enqueue(JOB_NAMES.RECALCULATE_GAME_SCORE, { gameId: review.gameId });
     await this.jobs.enqueue(JOB_NAMES.INVALIDATE_RANKINGS, {});
+    await this.reputation.invalidateUserStats(review.userId);
   }
 
   async vote(id: string, useful: boolean, voter: AuthUser): Promise<ReviewVoteResponse> {
@@ -372,6 +375,8 @@ export class ReviewsService {
       throw new NotFoundError(ERROR_CODES.REVIEW_NOT_FOUND, 'Review not found');
     }
 
+    await this.reputation.invalidateUserStats(review.userId);
+
     return {
       reviewId: result.id,
       usefulCount: result.usefulCount,
@@ -404,6 +409,8 @@ export class ReviewsService {
       );
       return this.reviews.findById(id, tx);
     });
+
+    await this.reputation.invalidateUserStats(review.userId);
 
     return {
       reviewId: id,

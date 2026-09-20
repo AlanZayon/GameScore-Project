@@ -41,19 +41,26 @@ export class UsersService {
       throw new NotFoundError(ERROR_CODES.USER_NOT_FOUND, 'User not found');
     }
 
-    const [reviewAgg, usefulVotes, hours] = await Promise.all([
+    const publishedWhere = { userId: user.id, deletedAt: null, status: 'PUBLISHED' as const };
+
+    const [reviewAgg, usefulVotes, hours, distinctGames] = await Promise.all([
       this.prisma.review.groupBy({
         by: ['recommended'],
-        where: { userId: user.id, deletedAt: null, status: 'PUBLISHED' },
+        where: publishedWhere,
         _count: { _all: true },
       }),
       this.prisma.review.aggregate({
-        where: { userId: user.id, deletedAt: null },
+        where: publishedWhere,
         _sum: { usefulCount: true },
       }),
       this.prisma.review.aggregate({
-        where: { userId: user.id, deletedAt: null, hoursPlayed: { not: null } },
+        where: { ...publishedWhere, hoursPlayed: { not: null } },
         _sum: { hoursPlayed: true },
+      }),
+      this.prisma.review.findMany({
+        where: publishedWhere,
+        distinct: ['gameId'],
+        select: { gameId: true },
       }),
     ]);
 
@@ -72,7 +79,7 @@ export class UsersService {
       recommendationPercentage:
         totalReviews === 0 ? 0 : Math.round((recommended / totalReviews) * 10000) / 100,
       usefulVotesReceived: usefulVotes._sum.usefulCount ?? 0,
-      gamesReviewed: totalReviews,
+      gamesReviewed: distinctGames.length,
       totalHoursPlayed: hours._sum.hoursPlayed ?? 0,
     });
   }

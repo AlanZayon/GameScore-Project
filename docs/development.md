@@ -74,7 +74,7 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 8. Helpfulness votes work; self-vote is rejected. Reports can be submitted.
 9. A 10/10 game does not outrank a 9500/10000 game on Top Rated (Wilson `confidenceScore`, minimum 50 reviews).
 10. Rankings tabs load: top rated, trending, new releases, popular.
-11. Profile page shows reputation and the user's reviews.
+11. Profile page shows reputation, evaluator analytics (when there are enough reviews), and the user's reviews.
 12. Dark theme is the default; the header toggle switches to light and back.
 13. Admin (`admin@gamescore.dev`) can list games, edit a game, remove/restore a review, resolve reports, confirm a review bomb, suspend a user and see the dashboard.
 14. Moderator (`moderator@gamescore.dev`) can moderate reviews/reports/bombs, list and suspend users, but cannot list games or import from IGDB.

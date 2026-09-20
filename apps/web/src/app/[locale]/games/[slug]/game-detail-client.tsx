@@ -11,6 +11,8 @@ import { REVIEW_RECOMMENDATION_FILTERS, REVIEW_SORTS } from '@gamescore/shared';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { AdSlot } from '@/components/ads/ad-slot';
+import { StoreLinks } from '@/components/ads/store-links';
 import { GameCover } from '@/components/game/game-cover';
 import { GameMedia } from '@/components/game/game-media';
 import { PlatformComparison } from '@/components/game/platform-comparison';
@@ -177,6 +179,8 @@ export function GameDetailClient({
             galleryImageUrls={game.galleryImageUrls ?? []}
           />
 
+          <AdSlot format="inArticle" label="game-mid" />
+
           {sessionReady && user && !game.viewerReviewId ? (
             <ReviewForm slug={game.slug} platforms={game.platforms} onSaved={() => void reload()} />
           ) : null}
@@ -299,12 +303,14 @@ export function GameDetailClient({
           </section>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <ScorePanel
             score={game.score}
             scoreExcludingReviewBombs={stats.scoreExcludingReviewBombs}
             hasReviewBombEvents={game.hasReviewBombEvents}
           />
+          <StoreLinks slug={game.slug} gameName={game.name} />
+          <AdSlot format="sidebar" label="game-aside" />
         </aside>
       </div>
     </div>

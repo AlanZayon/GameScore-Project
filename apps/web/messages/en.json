@@ -133,6 +133,17 @@
       "OTHER": "Other"
     }
   },
+  "ads": {
+    "mockBadge": "Mock",
+    "mockTitle": "AdSense slot",
+    "mockHint": "Dev preview of where a Google ad would appear. No network call.",
+    "mockAria": "Simulated advertisement",
+    "slotAria": "Advertisement",
+    "buyTitle": "Buy this game",
+    "buySubtitle": "Opens this title on Steam.",
+    "buySteam": "View on Steam",
+    "affiliateDisclosure": "Mock affiliate — in production this link would open {name} with your partner tag."
+  },
   "reviews": {
     "recommended": "Recommended",
     "notRecommended": "Not recommended",
@@ -249,7 +260,70 @@
     "hoursPlayed": "Hours played",
     "gamesReviewed": "Games reviewed",
     "emptyReviews": "This player has not published any reviews yet.",
-    "editProfile": "Edit profile"
+    "editProfile": "Edit profile",
+    "memberSince": "Member since {date}",
+    "tabs": {
+      "overview": "Overview",
+      "statistics": "Statistics",
+      "reviews": "Reviews",
+      "reputation": "Reputation"
+    },
+    "tiers": {
+      "NEWCOMER": "Newcomer",
+      "ACTIVE": "Active",
+      "TRUSTED": "Trusted",
+      "ESTABLISHED": "Established",
+      "RESPECTED": "Respected",
+      "ELITE": "Elite"
+    },
+    "range": {
+      "3m": "3 months",
+      "12m": "12 months",
+      "all": "All time"
+    },
+    "analyticsEmpty": "Not enough reviews for analytics yet",
+    "analyticsEmptyHint": "Charts appear after at least 3 published reviews.",
+    "usefulRate": "Usefulness rate",
+    "vsCommunity": "Rec. vs community",
+    "tier": "Tier",
+    "rankingWeight": "Ranking weight",
+    "topUseful": "Most useful reviews",
+    "topUsefulEmpty": "No useful votes on this player's reviews yet.",
+    "usefulCount": "{count, plural, one {# useful vote} other {# useful votes}}",
+    "howItWorksTitle": "How reputation works",
+    "howItWorksBody": "Reputation rises when other players mark reviews as useful and when you publish reviews. It falls when reviews are marked not useful or removed. The score is capped at 5000 and only partially influences review ranking, so it cannot dominate the list.",
+    "timelineTitle": "Review activity",
+    "timelineEmpty": "Not enough activity to chart yet.",
+    "timelineHint": "Hover the chart to see a period.",
+    "timelineRecommended": "Recommended",
+    "timelineNotRecommended": "Not recommended",
+    "byGenre": "By genre",
+    "byPlatform": "By platform",
+    "categoryEmpty": "No category with at least 3 reviews in this range.",
+    "unspecifiedPlatform": "No platform",
+    "hoursDistribution": "Hours played distribution",
+    "hoursEmpty": "No hours played reported yet.",
+    "activitySummary": "{sample} reviews across {months} active months ({rate}/month). Average hours when reported: {avgHours}.",
+    "ledgerTitle": "Reputation history",
+    "ledgerEmpty": "No reputation events yet.",
+    "moderationNet": "Moderation adjustments",
+    "moderationPenalties": "Moderation penalties",
+    "usefulVotesReceived": "Useful votes",
+    "notUsefulVotesReceived": "Not-useful votes",
+    "reviewsPublished": "Reviews published",
+    "reviewsDeleted": "Reviews deleted",
+    "userRemovedTitle": "User removed",
+    "userRemovedBody": "This account is no longer available.",
+    "reasons": {
+      "USEFUL_VOTE_RECEIVED": "Useful vote received",
+      "NOT_USEFUL_VOTE_RECEIVED": "Not-useful vote received",
+      "USEFUL_VOTE_REMOVED": "Useful vote removed",
+      "NOT_USEFUL_VOTE_REMOVED": "Not-useful vote removed",
+      "REVIEW_PUBLISHED": "Review published",
+      "REVIEW_DELETED": "Review deleted",
+      "REVIEW_REMOVED_BY_MODERATOR": "Review removed by moderator",
+      "ABUSE_CONFIRMED": "Abuse confirmed"
+    }
   },
   "settings": {
     "title": "Settings",

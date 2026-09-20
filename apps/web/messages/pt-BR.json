@@ -133,6 +133,17 @@
       "OTHER": "Outras"
     }
   },
+  "ads": {
+    "mockBadge": "Mock",
+    "mockTitle": "Espaço AdSense",
+    "mockHint": "Prévia em dev de onde um anúncio do Google apareceria. Sem chamada à rede.",
+    "mockAria": "Anúncio simulado",
+    "slotAria": "Anúncio",
+    "buyTitle": "Comprar este jogo",
+    "buySubtitle": "Abre a página deste título na Steam.",
+    "buySteam": "Ver na Steam",
+    "affiliateDisclosure": "Afiliado mock — em produção este link abriria {name} com o seu tag de parceiro."
+  },
   "reviews": {
     "recommended": "Recomenda",
     "notRecommended": "Não recomenda",
@@ -249,7 +260,70 @@
     "hoursPlayed": "Horas jogadas",
     "gamesReviewed": "Jogos avaliados",
     "emptyReviews": "Este jogador ainda não publicou avaliações.",
-    "editProfile": "Editar perfil"
+    "editProfile": "Editar perfil",
+    "memberSince": "Membro desde {date}",
+    "tabs": {
+      "overview": "Visão geral",
+      "statistics": "Estatísticas",
+      "reviews": "Avaliações",
+      "reputation": "Reputação"
+    },
+    "tiers": {
+      "NEWCOMER": "Iniciante",
+      "ACTIVE": "Ativo",
+      "TRUSTED": "Confiável",
+      "ESTABLISHED": "Estabelecido",
+      "RESPECTED": "Respeitado",
+      "ELITE": "Elite"
+    },
+    "range": {
+      "3m": "3 meses",
+      "12m": "12 meses",
+      "all": "Todo o histórico"
+    },
+    "analyticsEmpty": "Ainda não há avaliações suficientes para analytics",
+    "analyticsEmptyHint": "Os gráficos aparecem após pelo menos 3 avaliações publicadas.",
+    "usefulRate": "Taxa de utilidade",
+    "vsCommunity": "Rec. vs comunidade",
+    "tier": "Nível",
+    "rankingWeight": "Peso no ranking",
+    "topUseful": "Avaliações mais úteis",
+    "topUsefulEmpty": "Nenhum voto útil nas avaliações deste jogador ainda.",
+    "usefulCount": "{count, plural, one {# voto útil} other {# votos úteis}}",
+    "howItWorksTitle": "Como a reputação funciona",
+    "howItWorksBody": "A reputação sobe quando outros jogadores marcam avaliações como úteis e quando você publica avaliações. Ela cai quando avaliações são marcadas como não úteis ou removidas. O score é limitado a 5000 e só influencia parcialmente o ranking das avaliações, para não dominar a lista.",
+    "timelineTitle": "Atividade de avaliações",
+    "timelineEmpty": "Ainda não há atividade suficiente para o gráfico.",
+    "timelineHint": "Passe o mouse para ver um período.",
+    "timelineRecommended": "Recomendou",
+    "timelineNotRecommended": "Não recomendou",
+    "byGenre": "Por gênero",
+    "byPlatform": "Por plataforma",
+    "categoryEmpty": "Nenhuma categoria com pelo menos 3 avaliações neste período.",
+    "unspecifiedPlatform": "Sem plataforma",
+    "hoursDistribution": "Distribuição de horas jogadas",
+    "hoursEmpty": "Nenhuma hora jogada informada ainda.",
+    "activitySummary": "{sample} avaliações em {months} meses ativos ({rate}/mês). Média de horas quando informada: {avgHours}.",
+    "ledgerTitle": "Histórico de reputação",
+    "ledgerEmpty": "Nenhum evento de reputação ainda.",
+    "moderationNet": "Ajustes de moderação",
+    "moderationPenalties": "Penalidades de moderação",
+    "usefulVotesReceived": "Votos úteis",
+    "notUsefulVotesReceived": "Votos não úteis",
+    "reviewsPublished": "Avaliações publicadas",
+    "reviewsDeleted": "Avaliações excluídas",
+    "userRemovedTitle": "Usuário removido",
+    "userRemovedBody": "Esta conta não está mais disponível.",
+    "reasons": {
+      "USEFUL_VOTE_RECEIVED": "Voto útil recebido",
+      "NOT_USEFUL_VOTE_RECEIVED": "Voto não útil recebido",
+      "USEFUL_VOTE_REMOVED": "Voto útil removido",
+      "NOT_USEFUL_VOTE_REMOVED": "Voto não útil removido",
+      "REVIEW_PUBLISHED": "Avaliação publicada",
+      "REVIEW_DELETED": "Avaliação excluída",
+      "REVIEW_REMOVED_BY_MODERATOR": "Avaliação removida por moderador",
+      "ABUSE_CONFIRMED": "Abuso confirmado"
+    }
   },
   "settings": {
     "title": "Configurações",

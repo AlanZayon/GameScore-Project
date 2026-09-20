@@ -1,5 +1,12 @@
 import { hash } from '@node-rs/argon2';
-import { calculateGameScore, calculateReviewScoreValue, slugify } from '@gamescore/shared';
+import {
+  applyReputationDelta,
+  calculateGameScore,
+  calculateReviewScoreValue,
+  clampReputation,
+  slugify,
+  type ReputationReason,
+} from '@gamescore/shared';
 import { PrismaClient, type PlatformFamily } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -349,9 +356,18 @@ async function main(): Promise<void> {
       const voter = playerPool[(index + 3) % playerPool.length]!;
       if (voter.id === review.userId) continue;
       const isUseful = rng() > 0.25;
+      // Spread votes after the review so the reputation ledger has a real timeline.
+      const votedAt = new Date(
+        review.createdAt.getTime() + Math.floor(rng() * 14 + 1) * 86_400_000 + index * 3_600_000,
+      );
       try {
         await prisma.reviewVote.create({
-          data: { reviewId: review.id, userId: voter.id, useful: isUseful },
+          data: {
+            reviewId: review.id,
+            userId: voter.id,
+            useful: isUseful,
+            createdAt: votedAt,
+          },
         });
         if (isUseful) useful += 1;
         else notUseful += 1;
@@ -373,6 +389,95 @@ async function main(): Promise<void> {
     await prisma.review.update({
       where: { id: review.id },
       data: { usefulCount: useful, notUsefulCount: notUseful, rankingScore },
+    });
+  }
+
+  // Rebuild reputation ledgers from published reviews + votes so profile tabs
+  // have a visible history (the live API only writes events on real mutations).
+  await prisma.reputationEvent.deleteMany({});
+
+  const ledgerReviews = await prisma.review.findMany({
+    where: { deletedAt: null, status: 'PUBLISHED' },
+    select: { id: true, userId: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  const ledgerVotes = await prisma.reviewVote.findMany({
+    include: { review: { select: { userId: true } } },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  type PendingEvent = {
+    userId: string;
+    reason: ReputationReason;
+    sourceType: string;
+    sourceId: string;
+    createdAt: Date;
+  };
+
+  const pending: PendingEvent[] = [];
+  for (const review of ledgerReviews) {
+    pending.push({
+      userId: review.userId,
+      reason: 'REVIEW_PUBLISHED',
+      sourceType: 'review',
+      sourceId: review.id,
+      createdAt: review.createdAt,
+    });
+  }
+  for (const vote of ledgerVotes) {
+    pending.push({
+      userId: vote.review.userId,
+      reason: vote.useful ? 'USEFUL_VOTE_RECEIVED' : 'NOT_USEFUL_VOTE_RECEIVED',
+      sourceType: 'review',
+      sourceId: vote.reviewId,
+      createdAt: vote.createdAt,
+    });
+  }
+  pending.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+  const balances = new Map<string, number>();
+  for (const user of users) {
+    balances.set(user.id, 0);
+  }
+
+  const eventRows: Array<{
+    userId: string;
+    delta: number;
+    reason: ReputationReason;
+    balanceAfter: number;
+    sourceType: string;
+    sourceId: string;
+    createdAt: Date;
+  }> = [];
+
+  for (const event of pending) {
+    const current = balances.get(event.userId) ?? 0;
+    const next = applyReputationDelta(current, event.reason);
+    const delta = next - current;
+    balances.set(event.userId, next);
+    eventRows.push({
+      userId: event.userId,
+      delta,
+      reason: event.reason,
+      balanceAfter: next,
+      sourceType: event.sourceType,
+      sourceId: event.sourceId,
+      createdAt: event.createdAt,
+    });
+  }
+
+  const CHUNK = 500;
+  for (let index = 0; index < eventRows.length; index += CHUNK) {
+    await prisma.reputationEvent.createMany({
+      data: eventRows.slice(index, index + CHUNK),
+    });
+  }
+
+  for (const user of users) {
+    const score = clampReputation(balances.get(user.id) ?? 0);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { reputationScore: score },
     });
   }
 
@@ -470,7 +575,9 @@ async function main(): Promise<void> {
     });
   }
 
-  console.log(`Seed complete: ${users.length} users, ${createdGames.length} games, ${reviewTotal} reviews.`);
+  console.log(
+    `Seed complete: ${users.length} users, ${createdGames.length} games, ${reviewTotal} reviews, ${eventRows.length} reputation events.`,
+  );
   console.log('Accounts: admin@gamescore.dev / moderator@gamescore.dev / player1@gamescore.dev  password Password123!');
 }
 

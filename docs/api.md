@@ -40,7 +40,11 @@ Top rated orders by `confidenceScore` and requires `RANKING_MINIMUM_REVIEWS`.
 
 ## Users
 
-`GET /users/:username`, `GET /users/:username/reviews`, `PATCH /users/me`, `GET /users/me/export`, `DELETE /users/me`
+`GET /users/:username`, `GET /users/:username/reviews`, `GET /users/:username/statistics?range=3m|12m|all`, `GET /users/:username/reputation-events`, `PATCH /users/me`, `GET /users/me/export`, `DELETE /users/me`
+
+`GET /users/:username/statistics` returns cached profile analytics (recommendation breakdown, genre/platform buckets, timeline, hours, reputation summary, top useful reviews). Analytics charts are marked unavailable when the player has fewer than 3 published reviews.
+
+`GET /users/:username/reputation-events` is a cursor-paginated ledger. Sensitive moderation reasons are omitted for anonymous/player viewers and included for moderators/admins.
 
 ## Admin
 

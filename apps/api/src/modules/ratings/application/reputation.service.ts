@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { applyReputationDelta, type ReputationReason } from '@gamescore/shared';
 
+import { CacheService } from '../../../common/cache/cache.service';
 import type { PrismaTransaction } from '../../../common/prisma/prisma.service';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { USER_STATS_CACHE_PREFIX } from '../../users/domain/user-statistics';
 
 @Injectable()
 export class ReputationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   /**
    * Applies a reputation delta and records the event. Always runs inside the
@@ -51,6 +56,12 @@ export class ReputationService {
     reason: ReputationReason,
     source: { type: string; id: string },
   ): Promise<number> {
-    return this.prisma.$transaction((tx) => this.apply(userId, reason, source, tx));
+    const next = await this.prisma.$transaction((tx) => this.apply(userId, reason, source, tx));
+    await this.invalidateUserStats(userId);
+    return next;
+  }
+
+  async invalidateUserStats(userId: string): Promise<void> {
+    await this.cache.deleteByPrefix(`${USER_STATS_CACHE_PREFIX}${userId}`);
   }
 }

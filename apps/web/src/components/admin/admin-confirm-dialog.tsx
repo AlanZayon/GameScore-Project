@@ -38,10 +38,10 @@ export function AdminConfirmDialog({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative z-10 w-full max-w-md space-y-4 rounded-card border border-border-subtle bg-surface-raised p-5 shadow-xl"
+        className="relative z-10 w-full max-w-md space-y-3 rounded-card border border-border-subtle bg-surface-raised p-4 shadow-md"
       >
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="font-display text-lg font-semibold">{title}</h2>
           {description ? <div className="text-sm text-content-muted">{description}</div> : null}
         </div>
         <div className="flex justify-end gap-2">

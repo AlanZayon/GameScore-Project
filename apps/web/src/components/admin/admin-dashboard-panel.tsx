@@ -43,45 +43,43 @@ export function AdminDashboardPanel({
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge tone={dashboard.igdbConfigured ? 'positive' : 'mixed'}>
           {dashboard.igdbConfigured ? t('igdbOn') : t('igdbOff')}
         </Badge>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ul className="divide-y divide-border-subtle border-y border-border-subtle">
         {visibleCards.map(([key, value]) => {
           const tab = KPI_TO_TAB[key];
           const clickable = Boolean(tab) && (isAdmin || tab !== 'games');
-          const content = (
-            <>
-              <p className="text-xs uppercase tracking-wide text-content-subtle">{t(`kpis.${key}`)}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-            </>
-          );
+          const label = t(`kpis.${key}`);
           if (!clickable || !tab) {
             return (
-              <div key={key} className="rounded-card border border-border-subtle bg-surface p-4">
-                {content}
-              </div>
+              <li key={key} className="flex items-baseline justify-between gap-3 py-2.5">
+                <span className="text-sm text-content-muted">{label}</span>
+                <span className="score-num text-lg font-semibold">{value}</span>
+              </li>
             );
           }
           return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onNavigate(tab)}
-              className="rounded-card border border-border-subtle bg-surface p-4 text-left transition hover:border-brand/40 hover:bg-surface-hover"
-            >
-              {content}
-            </button>
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => onNavigate(tab)}
+                className="flex w-full items-baseline justify-between gap-3 py-2.5 text-left transition-colors duration-100 hover:bg-surface-hover"
+              >
+                <span className="text-sm text-content-muted">{label}</span>
+                <span className="score-num text-lg font-semibold text-brand">{value}</span>
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">{t('auditTitle')}</h2>
+      <section className="space-y-2">
+        <h2 className="font-display text-lg font-semibold">{t('auditTitle')}</h2>
         {dashboard.recentAuditLogs.length === 0 ? (
           <p className="text-sm text-content-muted">{t('auditEmpty')}</p>
         ) : (

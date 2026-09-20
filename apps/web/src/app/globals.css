@@ -1,57 +1,56 @@
 @import 'tailwindcss';
 
 /*
- * GameScore visual identity.
+ * GameScore — Evidence visual identity.
  *
- * Dark is the default theme (players browse at night), but every colour is a
- * semantic token defined twice, so switching to light is a class on <html>
- * rather than a rewrite of every component.
+ * Dark is the default. Every colour is a semantic token defined twice so
+ * light mode is a class on <html>, not a rewrite of every component.
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --gs-canvas: #f6f7f9;
+  --gs-canvas: #f4f5f7;
   --gs-surface: #ffffff;
   --gs-surface-raised: #ffffff;
-  --gs-surface-hover: #eef0f4;
-  --gs-border: #dcdfe6;
-  --gs-border-strong: #c3c8d4;
-  --gs-text: #10131a;
-  --gs-text-muted: #5a6272;
-  --gs-text-subtle: #838b9c;
-  --gs-brand: #5b3df5;
-  --gs-brand-hover: #4c31d8;
+  --gs-surface-hover: #e8eaef;
+  --gs-border: #d5d9e0;
+  --gs-border-strong: #b8bfcb;
+  --gs-text: #0f1218;
+  --gs-text-muted: #4a5260;
+  --gs-text-subtle: #6f7888;
+  --gs-brand: #0f766e;
+  --gs-brand-hover: #0d9488;
   --gs-brand-contrast: #ffffff;
-  --gs-brand-soft: #ece7ff;
-  --gs-positive: #0f9d58;
-  --gs-positive-soft: #e2f5ea;
-  --gs-mixed: #b7791f;
-  --gs-mixed-soft: #fdf3dc;
-  --gs-negative: #d13438;
-  --gs-negative-soft: #fdeaea;
-  --gs-overlay: rgb(16 19 26 / 45%);
+  --gs-brand-soft: #ccfbf1;
+  --gs-positive: #047857;
+  --gs-positive-soft: #d1fae5;
+  --gs-mixed: #b45309;
+  --gs-mixed-soft: #fef3c7;
+  --gs-negative: #b91c1c;
+  --gs-negative-soft: #fee2e2;
+  --gs-overlay: rgb(15 18 24 / 45%);
 }
 
 .dark {
-  --gs-canvas: #0b0e14;
-  --gs-surface: #141922;
-  --gs-surface-raised: #1b2230;
-  --gs-surface-hover: #222b3b;
-  --gs-border: #26303f;
-  --gs-border-strong: #364356;
-  --gs-text: #eef1f6;
-  --gs-text-muted: #9aa5b8;
-  --gs-text-subtle: #6d7893;
-  --gs-brand: #8b6dff;
-  --gs-brand-hover: #a08bff;
-  --gs-brand-contrast: #0b0e14;
-  --gs-brand-soft: #221a45;
-  --gs-positive: #3ddc84;
-  --gs-positive-soft: #10291c;
-  --gs-mixed: #f5c451;
-  --gs-mixed-soft: #2b2312;
-  --gs-negative: #ff5f56;
-  --gs-negative-soft: #2d1414;
+  --gs-canvas: #0a0c10;
+  --gs-surface: #12151c;
+  --gs-surface-raised: #181c26;
+  --gs-surface-hover: #1e2430;
+  --gs-border: #2a3140;
+  --gs-border-strong: #3d4658;
+  --gs-text: #e8ebf0;
+  --gs-text-muted: #9aa3b5;
+  --gs-text-subtle: #6b7488;
+  --gs-brand: #2dd4bf;
+  --gs-brand-hover: #5eead4;
+  --gs-brand-contrast: #0a0c10;
+  --gs-brand-soft: #134e4a;
+  --gs-positive: #34d399;
+  --gs-positive-soft: #064e3b;
+  --gs-mixed: #fbbf24;
+  --gs-mixed-soft: #451a03;
+  --gs-negative: #f87171;
+  --gs-negative-soft: #450a0a;
   --gs-overlay: rgb(0 0 0 / 65%);
 }
 
@@ -76,12 +75,11 @@
   --color-negative: var(--gs-negative);
   --color-negative-soft: var(--gs-negative-soft);
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif;
+  --font-sans: var(--font-plex-sans), 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-zilla-slab), 'Zilla Slab', ui-serif, Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', monospace;
 
-  --radius-card: 0.875rem;
+  --radius-card: 0.5rem;
 }
 
 @layer base {
@@ -102,7 +100,15 @@
     background-color: var(--gs-canvas);
     color: var(--gs-text);
     font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  .font-display {
+    font-family: var(--font-display);
   }
 
   :focus-visible {
@@ -110,7 +116,6 @@
     outline-offset: 2px;
   }
 
-  /* Respect users who ask for less motion. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -131,6 +136,11 @@
   @media (width >= 48rem) {
     padding-inline: 1.5rem;
   }
+}
+
+@utility score-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 @layer utilities {
@@ -166,4 +176,3 @@
     }
   }
 }
-

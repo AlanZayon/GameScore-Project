@@ -23,38 +23,40 @@ export function ScorePanel({
       : null;
 
   return (
-    <div className="rounded-card border border-border-subtle bg-surface p-5">
-      <p className="text-xs font-semibold uppercase tracking-widest text-content-subtle">{t('gameScore')}</p>
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <p className="text-4xl font-bold">
+    <div className="rounded-card border border-border-subtle bg-surface p-4">
+      <div className="flex items-end justify-between gap-3">
+        <p className="score-num text-4xl font-bold leading-none tracking-tight sm:text-5xl">
           {score.totalReviews === 0 ? '—' : `${Math.round(score.positivePercentage)}%`}
         </p>
         <ScoreBadge label={score.label} text={t(`labels.${score.label}`)} />
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover">
-        <div className="h-full bg-positive" style={{ width: `${positiveWidth}%` }} />
+      <div className="mt-3 h-1.5 overflow-hidden rounded-sm bg-surface-hover">
+        <div
+          className="h-full bg-positive transition-[width] duration-200"
+          style={{ width: `${positiveWidth}%` }}
+        />
       </div>
       <div className="mt-2 flex justify-between text-xs text-content-muted">
-        <span>
+        <span className="score-num">
           {t('positive')}: {score.positiveReviews}
         </span>
-        <span>
+        <span className="score-num">
           {t('negative')}: {score.negativeReviews}
         </span>
       </div>
       {score.averageRating != null && score.ratingCount > 0 ? (
-        <p className="mt-2 text-xs text-content-muted">
+        <p className="mt-1.5 text-xs text-content-muted">
           {t('averageRating', { value: score.averageRating.toFixed(1), count: score.ratingCount })}
         </p>
       ) : null}
-      {hasReviewBombEvents ? <p className="mt-3 text-xs text-mixed">{t('bombHint')}</p> : null}
+      {hasReviewBombEvents ? <p className="mt-2 text-xs text-mixed">{t('bombHint')}</p> : null}
       {alt ? (
-        <p className="mt-2 text-xs text-content-subtle">
+        <p className="mt-1.5 text-xs text-content-subtle">
           {t('excludingBombs', { value: Math.round(alt.positivePercentage) })}
         </p>
       ) : null}
-      <p className="mt-3 text-xs text-content-subtle">{t('confidenceHint')}</p>
-      <Link href="/scoring" className="mt-3 inline-block text-xs text-brand hover:underline">
+      <p className="mt-2 text-xs leading-snug text-content-subtle">{t('confidenceHint')}</p>
+      <Link href="/scoring" className="mt-2 inline-block text-xs font-medium text-brand hover:underline">
         {t('learnMore')}
       </Link>
     </div>

@@ -17,13 +17,15 @@ function CoverFallback({ name, className }: { name: string; className?: string }
   return (
     <div
       className={cn(
-        'flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#141922] via-[#1b2230] to-[#2a1f4d] px-2 text-center',
+        'flex h-full w-full flex-col items-center justify-center bg-surface-hover px-2 text-center',
         className,
       )}
       aria-hidden
     >
-      <span className="text-3xl font-bold tracking-tight text-brand">{initials || 'GS'}</span>
-      <span className="mt-2 line-clamp-2 text-[10px] leading-tight text-content-subtle">{name}</span>
+      <span className="font-display text-2xl font-semibold tracking-tight text-content-muted">
+        {initials || 'GS'}
+      </span>
+      <span className="mt-1.5 line-clamp-2 text-[10px] leading-tight text-content-subtle">{name}</span>
     </div>
   );
 }

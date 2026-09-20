@@ -16,7 +16,7 @@ export function AdminFilterChips({
           key={option.id}
           type="button"
           onClick={() => onChange(option.id)}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+          className={`min-h-8 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-100 ${
             value === option.id
               ? 'bg-brand text-brand-contrast'
               : 'border border-border-subtle text-content-muted hover:bg-surface-hover'

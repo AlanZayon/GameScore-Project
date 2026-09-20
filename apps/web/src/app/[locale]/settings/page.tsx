@@ -156,14 +156,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="container-page max-w-xl space-y-10 py-10">
+    <main className="container-page max-w-xl space-y-8 py-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="mt-1 text-content-muted">{t('subtitle')}</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
+        <p className="mt-1 text-sm text-content-muted">{t('subtitle')}</p>
       </div>
 
       {!account.emailVerified ? (
-        <div className="rounded-lg border border-border-subtle bg-surface-raised px-4 py-3">
+        <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-3">
           <p className="text-sm text-content-muted">{t('verifyBanner')}</p>
           <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={resending} onClick={() => void resendVerification()}>
             {resending ? authT('submitting') : t('resendVerification')}

@@ -20,7 +20,7 @@ export function StoreLinks({ slug, gameName }: { slug: string; gameName: string 
         href={steamStoreUrl(appId)}
         target="_blank"
         rel="noopener noreferrer sponsored"
-        className="inline-flex w-full items-center justify-center rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-contrast hover:bg-brand-hover"
+        className="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-medium text-brand-contrast hover:bg-brand-hover"
       >
         {t('buySteam')}
       </a>

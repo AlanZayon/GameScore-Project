@@ -39,6 +39,7 @@ export function IntlProvider({
     <NextIntlClientProvider
       locale={locale}
       messages={messages}
+      timeZone="America/Sao_Paulo"
       onError={onIntlError}
       getMessageFallback={messageFallback}
     >

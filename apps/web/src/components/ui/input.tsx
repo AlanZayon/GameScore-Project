@@ -6,7 +6,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        'w-full rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm text-content placeholder:text-content-subtle focus:border-brand',
+        'w-full rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm text-content placeholder:text-content-subtle focus:border-brand',
         className,
       )}
       {...props}
@@ -18,7 +18,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return (
     <textarea
       className={cn(
-        'w-full rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm text-content placeholder:text-content-subtle focus:border-brand',
+        'w-full rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm text-content placeholder:text-content-subtle focus:border-brand',
         className,
       )}
       {...props}
@@ -28,7 +28,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 
 export function Label({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-content-muted">
+    <label htmlFor={htmlFor} className="mb-1 block text-sm font-medium text-content-muted">
       {children}
     </label>
   );

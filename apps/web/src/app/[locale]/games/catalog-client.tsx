@@ -5,7 +5,7 @@ import { GAME_SORTS } from '@gamescore/shared';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 
-import { GameCard } from '@/components/game/game-card';
+import { GameRow } from '@/components/game/game-card';
 import { EmptyState, Pagination } from '@/components/ui/misc';
 
 export function CatalogClient({
@@ -38,11 +38,11 @@ export function CatalogClient({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2">
         <select
           aria-label={t('allPlatforms')}
-          className="rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
+          className="min-h-10 rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm"
           value={filters.platform ?? ''}
           onChange={(event) => update({ platform: event.target.value, page: '1' })}
         >
@@ -55,7 +55,7 @@ export function CatalogClient({
         </select>
         <select
           aria-label={t('allGenres')}
-          className="rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
+          className="min-h-10 rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm"
           value={filters.genre ?? ''}
           onChange={(event) => update({ genre: event.target.value, page: '1' })}
         >
@@ -68,7 +68,7 @@ export function CatalogClient({
         </select>
         <select
           aria-label={t('sort.POPULAR')}
-          className="rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
+          className="min-h-10 rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm"
           value={filters.sort ?? 'POPULAR'}
           onChange={(event) => update({ sort: event.target.value, page: '1' })}
         >
@@ -82,9 +82,9 @@ export function CatalogClient({
       {games.items.length === 0 ? (
         <EmptyState title={t('empty')} />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col border-t border-border-subtle">
           {games.items.map((game) => (
-            <GameCard key={game.id} game={game} />
+            <GameRow key={game.id} game={game} />
           ))}
         </div>
       )}

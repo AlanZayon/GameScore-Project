@@ -108,7 +108,7 @@ export function SearchBox({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-border-subtle bg-surface-raised shadow-lg"
+          className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-border-subtle bg-surface-raised shadow-md"
         >
           {suggestions.map((item, index) => (
             <li key={item.id} role="option" aria-selected={index === active} id={`${listId}-${index}`}>

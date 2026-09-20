@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { GameCard } from '@/components/game/game-card';
+import { GameRow } from '@/components/game/game-card';
 import { ExternalGameCard } from '@/components/search/external-game-card';
 import { SearchBox } from '@/components/search/search-box';
 import { EmptyState, ErrorState } from '@/components/ui/misc';
@@ -35,10 +35,14 @@ export default async function SearchPage({
   const empty = Boolean(result && !hasLocal && !hasExternal);
 
   return (
-    <main className="container-page space-y-8 py-10">
+    <main className="container-page space-y-6 py-6">
       <div className="space-y-3">
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        {query ? <p className="text-content-muted">{t('resultsFor', { query })}</p> : <p>{t('prompt')}</p>}
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
+        {query ? (
+          <p className="text-sm text-content-muted">{t('resultsFor', { query })}</p>
+        ) : (
+          <p className="text-sm text-content-muted">{t('prompt')}</p>
+        )}
         <SearchBox className="max-w-xl" initialQuery={query} />
       </div>
 
@@ -46,23 +50,23 @@ export default async function SearchPage({
       {empty ? <EmptyState title={t('empty')} /> : null}
 
       {hasLocal ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">{t('inCatalogue')}</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="space-y-2">
+          <h2 className="font-display text-lg font-semibold">{t('inCatalogue')}</h2>
+          <div className="flex flex-col border-t border-border-subtle">
             {result!.items.map((game) => (
-              <GameCard key={game.id} game={game} />
+              <GameRow key={game.id} game={game} />
             ))}
           </div>
         </section>
       ) : null}
 
       {hasExternal ? (
-        <section className="space-y-3">
+        <section className="space-y-2">
           <div>
-            <h2 className="text-lg font-semibold">{t('availableOnline')}</h2>
+            <h2 className="font-display text-lg font-semibold">{t('availableOnline')}</h2>
             <p className="text-sm text-content-muted">{t('availableOnlineHint')}</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col border-t border-border-subtle">
             {result!.externalItems.map((hit) => (
               <ExternalGameCard key={hit.externalId} hit={hit} />
             ))}

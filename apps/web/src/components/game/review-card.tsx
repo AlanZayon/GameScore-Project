@@ -118,11 +118,11 @@ export function ReviewCard({
   }
 
   return (
-    <Card className={cn('p-4', review.viewerIsAuthor && 'border-brand/40')}>
+    <Card className={cn('p-3', review.viewerIsAuthor && 'border-brand')}>
       {showGame ? (
         <Link
           href={`/games/${review.game.slug}`}
-          className="mb-3 flex items-center gap-3 rounded-lg hover:bg-surface-hover"
+          className="mb-3 flex items-center gap-3 rounded-md hover:bg-surface-hover"
         >
           <GameCover
             name={review.game.name}
@@ -203,7 +203,7 @@ export function ReviewCard({
             <Label htmlFor="report-reason">{t('reportReason')}</Label>
             <select
               id="report-reason"
-              className="w-full rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
+              className="w-full rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm"
               value={reason}
               onChange={(event) => setReason(event.target.value as ReportReason)}
             >

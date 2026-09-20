@@ -129,20 +129,20 @@ export function GameDetailClient({
   const loginHref = loginPath(pathname);
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-8">
-          <div className="flex gap-5">
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+        <div className="space-y-6">
+          <div className="flex gap-4">
             <GameCover
               name={game.name}
               src={game.coverImageUrl}
-              className="h-48 w-36 shrink-0 rounded-card"
+              className="h-40 w-28 shrink-0 rounded-card sm:h-48 sm:w-36"
               sizes="144px"
               priority
             />
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold">{game.name}</h1>
-              <p className="text-content-muted">{game.summary}</p>
+            <div className="min-w-0 space-y-2">
+              <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{game.name}</h1>
+              <p className="text-sm text-content-muted">{game.summary}</p>
               {longDescription ? (
                 <div className="space-y-2">
                   {descriptionOpen ? (
@@ -150,14 +150,14 @@ export function GameDetailClient({
                   ) : null}
                   <button
                     type="button"
-                    className="text-sm text-brand hover:underline"
+                    className="text-sm font-medium text-brand hover:underline"
                     onClick={() => setDescriptionOpen((value) => !value)}
                   >
                     {descriptionOpen ? t('readLess') : t('readMore')}
                   </button>
                 </div>
               ) : null}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {game.platforms.map((platform) => (
                   <Badge key={platform.id}>{platform.abbreviation}</Badge>
                 ))}
@@ -167,10 +167,18 @@ export function GameDetailClient({
                   </Badge>
                 ))}
               </div>
-              <p className="text-sm text-content-subtle">
+              <p className="text-xs text-content-subtle">
                 {[game.developer, game.publisher, game.releaseDate?.slice(0, 4)].filter(Boolean).join(' · ')}
               </p>
             </div>
+          </div>
+
+          <div className="lg:hidden">
+            <ScorePanel
+              score={game.score}
+              scoreExcludingReviewBombs={stats.scoreExcludingReviewBombs}
+              hasReviewBombEvents={game.hasReviewBombEvents}
+            />
           </div>
 
           <GameMedia
@@ -186,44 +194,44 @@ export function GameDetailClient({
           ) : null}
           {sessionReady && !user ? (
             <p className="text-sm text-content-muted">
-              <Link href={loginHref} className="text-brand underline">
+              <Link href={loginHref} className="font-medium text-brand underline">
                 {reviewsT('loginToReview')}
               </Link>
             </p>
           ) : null}
 
           {stats.timeline.length >= 2 ? (
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">{t('timelineTitle')}</h2>
+            <section className="space-y-2">
+              <h2 className="font-display text-lg font-semibold">{t('timelineTitle')}</h2>
               <ReviewTimelineChart timeline={stats.timeline} />
             </section>
           ) : null}
 
           {(stats.platforms.length > 0 || (stats.families?.length ?? 0) > 0) ? (
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">{t('platformCompareTitle')}</h2>
+            <section className="space-y-2">
+              <h2 className="font-display text-lg font-semibold">{t('platformCompareTitle')}</h2>
               <PlatformComparison platforms={stats.platforms} families={stats.families ?? []} />
             </section>
           ) : null}
 
           {related.length > 0 ? (
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold">{t('relatedTitle')}</h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+            <section className="space-y-2">
+              <h2 className="font-display text-lg font-semibold">{t('relatedTitle')}</h2>
+              <div className="grid gap-2 sm:grid-cols-2">
                 {related.map((item) => (
                   <Link
                     key={`${item.kind}:${item.externalId}`}
                     href={relatedHref(item)}
-                    className="flex gap-3 rounded-card border border-border-subtle bg-surface p-3 transition hover:border-brand/40 hover:bg-surface-hover"
+                    className="flex gap-2.5 rounded-card border border-border-subtle bg-surface p-2.5 transition-colors duration-100 hover:border-border-strong hover:bg-surface-hover"
                   >
                     <GameCover
                       name={item.name}
                       src={item.coverImageUrl}
-                      className="h-20 w-14 shrink-0 rounded-md"
+                      className="h-16 w-12 shrink-0 rounded-sm"
                     />
                     <div className="min-w-0 space-y-1">
                       <Badge tone="brand">{t(relatedLabelKey(item.kind))}</Badge>
-                      <p className="truncate font-medium">{item.name}</p>
+                      <p className="truncate text-sm font-medium">{item.name}</p>
                       {item.releaseDate ? (
                         <p className="text-xs text-content-subtle">{item.releaseDate.slice(0, 4)}</p>
                       ) : null}
@@ -234,13 +242,13 @@ export function GameDetailClient({
             </section>
           ) : null}
 
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">{t('reviews')}</h2>
-              <div className="flex flex-wrap gap-2">
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-display text-lg font-semibold">{t('reviews')}</h2>
+              <div className="flex flex-wrap gap-1.5">
                 <select
                   aria-label={reviewsT('filterAll')}
-                  className="rounded-lg border border-border-strong bg-canvas px-3 py-1.5 text-sm"
+                  className="min-h-9 rounded-md border border-border-strong bg-canvas px-2.5 py-1.5 text-sm"
                   value={recommendation}
                   onChange={(event) => setRecommendation(event.target.value)}
                 >
@@ -256,7 +264,7 @@ export function GameDetailClient({
                 </select>
                 <select
                   aria-label={reviewsT('platformLabel')}
-                  className="rounded-lg border border-border-strong bg-canvas px-3 py-1.5 text-sm"
+                  className="min-h-9 rounded-md border border-border-strong bg-canvas px-2.5 py-1.5 text-sm"
                   value={platformId}
                   onChange={(event) => setPlatformId(event.target.value)}
                 >
@@ -269,7 +277,7 @@ export function GameDetailClient({
                 </select>
                 <select
                   aria-label={reviewsT('sort.BEST')}
-                  className="rounded-lg border border-border-strong bg-canvas px-3 py-1.5 text-sm"
+                  className="min-h-9 rounded-md border border-border-strong bg-canvas px-2.5 py-1.5 text-sm"
                   value={sort}
                   onChange={(event) => setSort(event.target.value)}
                 >
@@ -303,7 +311,7 @@ export function GameDetailClient({
           </section>
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <aside className="hidden space-y-3 lg:sticky lg:top-20 lg:block lg:self-start">
           <ScorePanel
             score={game.score}
             scoreExcludingReviewBombs={stats.scoreExcludingReviewBombs}
@@ -312,6 +320,9 @@ export function GameDetailClient({
           <StoreLinks slug={game.slug} gameName={game.name} />
           <AdSlot format="sidebar" label="game-aside" />
         </aside>
+      </div>
+      <div className="space-y-3 lg:hidden">
+        <StoreLinks slug={game.slug} gameName={game.name} />
       </div>
     </div>
   );

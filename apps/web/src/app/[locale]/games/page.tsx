@@ -43,10 +43,10 @@ export default async function GamesPage({
   }
 
   return (
-    <main className="container-page space-y-6 py-10">
+    <main className="container-page space-y-5 py-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="mt-1 text-content-muted">{t('subtitle')}</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
+        <p className="mt-1 text-sm text-content-muted">{t('subtitle')}</p>
       </div>
       {failed ? <ErrorState title={common('errorTitle')} /> : (
         <CatalogClient games={games} platforms={platforms} genres={genres} filters={query} />

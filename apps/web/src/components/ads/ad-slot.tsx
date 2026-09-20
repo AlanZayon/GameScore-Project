@@ -41,21 +41,15 @@ export function AdSlot({
 
   return (
     <aside
-      className={`relative overflow-hidden rounded-card border border-dashed border-border-strong bg-surface-hover/60 ${className ?? ''}`}
+      className={`flex items-center justify-center border border-dashed border-border-subtle bg-canvas px-3 py-4 text-center ${className ?? ''}`}
       style={{ minHeight }}
       aria-label={t('mockAria')}
     >
-      <div className="absolute inset-0 bg-[repeating-linear-gradient(-45deg,transparent,transparent_8px,rgba(0,0,0,0.03)_8px,rgba(0,0,0,0.03)_16px)] dark:bg-[repeating-linear-gradient(-45deg,transparent,transparent_8px,rgba(255,255,255,0.04)_8px,rgba(255,255,255,0.04)_16px)]" />
-      <div className="relative flex h-full min-h-[inherit] flex-col items-center justify-center gap-1 px-4 py-6 text-center">
-        <span className="rounded bg-brand/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand">
-          {t('mockBadge')}
-        </span>
-        <p className="text-sm font-medium text-content">{label ?? t('mockTitle')}</p>
-        <p className="max-w-xs text-xs text-content-subtle">{t('mockHint')}</p>
-        <p className="text-[10px] text-content-subtle">
-          {format} · {publicAdsEnv.client}
-        </p>
-      </div>
+      <p className="text-xs text-content-subtle">
+        {label ?? t('mockTitle')}
+        <span className="mx-1.5 text-content-subtle/50">·</span>
+        {format}
+      </p>
     </aside>
   );
 }

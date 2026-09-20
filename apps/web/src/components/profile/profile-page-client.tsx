@@ -95,21 +95,21 @@ export function ProfilePageClient({
   }, [tab, events, loadEvents]);
 
   return (
-    <main className="container-page space-y-8 py-10">
+    <main className="container-page space-y-6 py-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Avatar name={profile.displayName || profile.username} src={profile.avatarUrl} size="lg" />
           <div>
-            <h1 className="text-3xl font-bold">{profile.displayName || profile.username}</h1>
-            <p className="text-content-muted">@{profile.username}</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{profile.displayName || profile.username}</h1>
+            <p className="text-sm text-content-muted">@{profile.username}</p>
             {profile.bio ? <p className="mt-2 max-w-xl text-sm text-content-muted">{profile.bio}</p> : null}
             <p className="mt-2 text-sm text-content-subtle">
               {t('memberSince', {
                 date: new Date(profile.createdAt).toLocaleDateString(locale),
               })}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-lg bg-surface-hover px-2.5 py-1 text-xs font-medium text-content">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="rounded-md bg-surface-hover px-2 py-0.5 text-xs font-medium text-content">
                 {t(`tiers.${stats.reputation.tier}`)}
               </span>
               <ProfileEditLink username={profile.username} label={t('editProfile')} />
@@ -118,7 +118,7 @@ export function ProfilePageClient({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 border-y border-border-subtle py-3 sm:grid-cols-3">
         <Stat label={t('reviews')} value={profile.stats.totalReviews} />
         <Stat label={t('reputation')} value={profile.reputationScore} />
         <Stat label={t('useful')} value={profile.stats.usefulVotesReceived} />
@@ -128,7 +128,7 @@ export function ProfilePageClient({
         />
         <Stat label={t('hoursPlayed')} value={profile.stats.totalHoursPlayed} />
         <Stat label={t('gamesReviewed')} value={profile.stats.gamesReviewed} />
-      </div>
+      </dl>
 
       <Tabs tabs={tabs} value={tab} onChange={(id) => setTab(id as TabId)} />
 
@@ -194,7 +194,7 @@ function OverviewTab({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">{t('topUseful')}</h2>
+        <h2 className="font-display text-lg font-semibold">{t('topUseful')}</h2>
         {stats.topUsefulReviews.length === 0 ? (
           <EmptyState title={t('topUsefulEmpty')} />
         ) : (
@@ -263,7 +263,7 @@ function StatisticsTab({
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">{t('timelineTitle')}</h2>
+        <h2 className="font-display text-lg font-semibold">{t('timelineTitle')}</h2>
         <ProfileTimelineChart timeline={stats.timeline} />
       </section>
 
@@ -283,7 +283,7 @@ function StatisticsTab({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">{t('hoursDistribution')}</h2>
+        <h2 className="font-display text-lg font-semibold">{t('hoursDistribution')}</h2>
         <HoursBars buckets={stats.hoursPlayedDistribution} t={t} />
       </section>
 
@@ -349,7 +349,7 @@ function ReputationTab({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">{t('ledgerTitle')}</h2>
+        <h2 className="font-display text-lg font-semibold">{t('ledgerTitle')}</h2>
         {!events || events.items.length === 0 ? (
           <EmptyState title={t('ledgerEmpty')} />
         ) : (
@@ -386,9 +386,9 @@ function ReputationTab({
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-card border border-border-subtle bg-surface p-4">
-      <p className="text-xs uppercase tracking-wide text-content-subtle">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
+    <div className="min-w-0">
+      <dt className="text-xs text-content-subtle">{label}</dt>
+      <dd className="score-num text-lg font-semibold">{value}</dd>
     </div>
   );
 }
@@ -407,7 +407,7 @@ function CategoryBars({
   if (items.length === 0) {
     return (
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">{title}</h2>
+        <h2 className="font-display text-lg font-semibold">{title}</h2>
         <EmptyState title={empty} />
       </div>
     );
@@ -417,19 +417,19 @@ function CategoryBars({
 
   return (
     <div className="space-y-3">
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <h2 className="font-display text-lg font-semibold">{title}</h2>
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.key} className="space-y-1">
             <div className="flex justify-between gap-2 text-sm">
               <span>{item.key === 'unspecified' ? unspecifiedLabel : item.name}</span>
-              <span className="text-content-subtle">
+              <span className="score-num text-content-subtle">
                 {item.reviewCount} · {Math.round(item.recommendationPercentage)}%
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-hover">
+            <div className="h-1.5 overflow-hidden rounded-sm bg-surface-hover">
               <div
-                className="h-full rounded-full bg-brand"
+                className="h-full rounded-sm bg-brand"
                 style={{ width: `${(item.reviewCount / max) * 100}%` }}
               />
             </div>
@@ -460,9 +460,9 @@ function HoursBars({
             <span>{bucket.bucket}h</span>
             <span className="text-content-subtle">{bucket.count}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-hover">
+          <div className="h-1.5 overflow-hidden rounded-sm bg-surface-hover">
             <div
-              className="h-full rounded-full bg-brand"
+              className="h-full rounded-sm bg-brand"
               style={{ width: `${(bucket.count / max) * 100}%` }}
             />
           </div>

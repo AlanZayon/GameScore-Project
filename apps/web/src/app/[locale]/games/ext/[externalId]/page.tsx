@@ -71,7 +71,7 @@ export default async function ExternalGamePage({
   }
 
   return (
-    <main className="container-page space-y-8 py-8">
+    <main className="container-page space-y-6 py-6">
       <p className="sr-only">{t('title')}</p>
       <ExternalGameClient preview={preview} />
     </main>

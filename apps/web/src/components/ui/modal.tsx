@@ -46,11 +46,11 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="w-full max-w-lg rounded-card border border-border-subtle bg-surface p-5 shadow-xl outline-none"
+        className="w-full max-w-lg rounded-card border border-border-subtle bg-surface p-4 shadow-md outline-none"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="mb-3 flex items-start justify-between gap-4">
+          <h2 className="font-display text-lg font-semibold">{title}</h2>
           <Button variant="ghost" size="sm" onClick={onClose} type="button" aria-label={t('close')}>
             ×
           </Button>

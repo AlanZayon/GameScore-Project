@@ -132,7 +132,7 @@ export function ReviewForm({
           <select
             id="platform"
             aria-label={t('platformLabel')}
-            className="w-full rounded-lg border border-border-strong bg-canvas px-3 py-2 text-sm"
+            className="w-full rounded-md border border-border-strong bg-canvas px-3 py-2 text-sm"
             {...form.register('platformId')}
           >
             <option value="">{t('platformNone')}</option>

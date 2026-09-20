@@ -90,7 +90,7 @@ export function AdminUsersPanel({
               <div className="flex flex-wrap items-center gap-2">
                 {isAdmin ? (
                   <select
-                    className="rounded-lg border border-border-strong bg-canvas px-2 py-1.5 text-sm"
+                    className="rounded-md border border-border-strong bg-canvas px-2 py-1.5 text-sm"
                     value={account.role}
                     disabled={isBusy()}
                     onChange={(event) => {

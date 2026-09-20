@@ -55,7 +55,7 @@ export function PlatformComparison({
           type="button"
           onClick={() => setMode('family')}
           disabled={families.length === 0}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition disabled:opacity-40 ${
+          className={`min-h-8 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-100 disabled:opacity-40 ${
             mode === 'family'
               ? 'bg-brand text-brand-contrast'
               : 'border border-border-subtle text-content-muted hover:bg-surface-hover'
@@ -67,7 +67,7 @@ export function PlatformComparison({
           type="button"
           onClick={() => setMode('platform')}
           disabled={platforms.length === 0}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition disabled:opacity-40 ${
+          className={`min-h-8 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-100 disabled:opacity-40 ${
             mode === 'platform'
               ? 'bg-brand text-brand-contrast'
               : 'border border-border-subtle text-content-muted hover:bg-surface-hover'
@@ -77,21 +77,23 @@ export function PlatformComparison({
         </button>
       </div>
 
-      <ul className="space-y-3">
+      <ul className="space-y-2.5">
         {rows.map((row) => (
-          <li key={row.key} className="space-y-1.5">
+          <li key={row.key} className="space-y-1">
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span className="font-medium">{row.label}</span>
               <div className="flex items-center gap-2">
                 <ScoreBadge label={row.labelScore} text={scoreT(`labels.${row.labelScore}`)} />
                 <Badge tone="neutral">
-                  {Math.round(row.positivePercentage)}% · {row.totalReviews}
+                  <span className="score-num">
+                    {Math.round(row.positivePercentage)}% · {row.totalReviews}
+                  </span>
                 </Badge>
               </div>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-hover">
+            <div className="h-1.5 overflow-hidden rounded-sm bg-surface-hover">
               <div
-                className="h-full rounded-full bg-brand"
+                className="h-full rounded-sm bg-brand"
                 style={{ width: `${(row.positivePercentage / maxPct) * 100}%` }}
               />
             </div>

@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { apiFetch, ApiError } from '@/lib/api';
 import { Link } from '@/i18n/navigation';
 
@@ -39,8 +38,8 @@ export default function VerifyEmailPage() {
   }, [token, errors]);
 
   return (
-    <main className="container-page flex max-w-md flex-col gap-6 py-16">
-      <h1 className="text-3xl font-bold">{t('verifyTitle')}</h1>
+    <main className="container-page flex max-w-md flex-col gap-5 py-10">
+      <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('verifyTitle')}</h1>
       {status === 'idle' ? <p className="text-content-muted">{t('submitting')}</p> : null}
       {status === 'ok' ? <p className="text-positive">{t('verifySuccess')}</p> : null}
       {status === 'error' && error ? <p className="text-sm text-negative">{error}</p> : null}

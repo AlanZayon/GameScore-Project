@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Moon, Sun, Languages } from 'lucide-react';
+import { Menu, Moon, Sun, Languages, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, type ReactNode } from 'react';
 
@@ -20,7 +20,10 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link
       href={href}
-      className={cn('hover:text-content', active ? 'font-semibold text-content' : 'text-content-muted')}
+      className={cn(
+        'rounded-md px-2 py-1.5 text-sm transition-colors duration-100 hover:text-content',
+        active ? 'font-semibold text-content' : 'text-content-muted',
+      )}
       aria-current={active ? 'page' : undefined}
     >
       {children}
@@ -38,24 +41,24 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border-subtle bg-canvas/90 backdrop-blur">
-      <div className="container-page flex items-center gap-4 py-3">
-        <Link href="/" className="text-lg font-bold tracking-tight">
+    <header className="sticky top-0 z-30 border-b border-border-subtle bg-canvas">
+      <div className="container-page flex items-center gap-3 py-2.5">
+        <Link href="/" className="font-display text-lg font-bold tracking-tight text-content shrink-0">
           GameScore
         </Link>
-        <nav className="hidden items-center gap-4 text-sm md:flex">
+        <nav className="hidden items-center gap-0.5 md:flex">
           <NavLink href="/games">{t('games')}</NavLink>
           <NavLink href="/rankings">{t('rankings')}</NavLink>
           <NavLink href="/scoring">{t('scoring')}</NavLink>
         </nav>
         <SearchBox className="hidden min-w-0 flex-1 md:block" />
-        <div className="ml-auto flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={toggle} aria-label={t('toggleTheme')}>
+        <div className="ml-auto flex items-center gap-0.5">
+          <Button variant="ghost" size="sm" onClick={toggle} aria-label={t('toggleTheme')} className="min-h-10 w-10 px-0">
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           <Dropdown
             trigger={
-              <Button variant="ghost" size="sm" aria-label={t('changeLanguage')}>
+              <Button variant="ghost" size="sm" aria-label={t('changeLanguage')} className="min-h-10 w-10 px-0">
                 <Languages className="h-4 w-4" />
               </Button>
             }
@@ -64,7 +67,7 @@ export function SiteHeader() {
               <button
                 key={locale}
                 type="button"
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-hover"
+                className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover"
                 onClick={() => router.replace(pathname, { locale })}
               >
                 {localeT(locale)}
@@ -72,7 +75,7 @@ export function SiteHeader() {
             ))}
           </Dropdown>
           {!ready ? (
-            <Skeleton className="hidden h-8 w-24 rounded-lg sm:block" />
+            <Skeleton className="hidden h-8 w-24 rounded-md sm:block" />
           ) : user ? (
             <Dropdown
               trigger={
@@ -83,32 +86,38 @@ export function SiteHeader() {
             >
               <Link
                 href={`/profile/${user.username}`}
-                className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover"
+                className="block rounded-md px-3 py-2 text-sm hover:bg-surface-hover"
               >
                 {t('profile')}
               </Link>
-              <Link href="/settings" className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover">
+              <Link href="/settings" className="block rounded-md px-3 py-2 text-sm hover:bg-surface-hover">
                 {t('settings')}
               </Link>
               {user.role !== 'USER' ? (
-                <Link href="/admin" className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-hover">
+                <Link href="/admin" className="block rounded-md px-3 py-2 text-sm hover:bg-surface-hover">
                   {t('admin')}
                 </Link>
               ) : null}
               <button
                 type="button"
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-hover"
+                className="block w-full rounded-md px-3 py-2 text-left text-sm hover:bg-surface-hover"
                 onClick={() => void logout()}
               >
                 {t('logout')}
               </button>
             </Dropdown>
           ) : (
-            <div className="hidden gap-2 sm:flex">
-              <Link href="/login" className="rounded-lg px-3 py-2 text-sm hover:bg-surface-hover">
+            <div className="hidden gap-1.5 sm:flex">
+              <Link
+                href="/login"
+                className="inline-flex min-h-10 items-center rounded-md px-3 text-sm hover:bg-surface-hover"
+              >
                 {t('login')}
               </Link>
-              <Link href="/register" className="rounded-lg bg-brand px-3 py-2 text-sm text-brand-contrast">
+              <Link
+                href="/register"
+                className="inline-flex min-h-10 items-center rounded-md bg-brand px-3 text-sm font-medium text-brand-contrast hover:bg-brand-hover"
+              >
                 {t('register')}
               </Link>
             </div>
@@ -116,38 +125,54 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="sm"
-            className="md:hidden"
+            className="min-h-10 w-10 px-0 md:hidden"
             onClick={() => setMenuOpen((value) => !value)}
             aria-label={menuOpen ? t('closeMenu') : t('openMenu')}
             aria-expanded={menuOpen}
           >
-            <Menu className="h-4 w-4" />
+            {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>
       {menuOpen ? (
         <div className="border-t border-border-subtle px-4 py-3 md:hidden">
           <SearchBox />
-          <div className="mt-3 flex flex-col gap-2 text-sm">
+          <nav className="mt-3 flex flex-col gap-0.5 text-sm">
             <NavLink href="/games">{t('games')}</NavLink>
             <NavLink href="/rankings">{t('rankings')}</NavLink>
             <NavLink href="/scoring">{t('scoring')}</NavLink>
             {!user ? (
               <>
-                <Link href="/login">{t('login')}</Link>
-                <Link href="/register">{t('register')}</Link>
+                <Link href="/login" className="rounded-md px-2 py-2 text-content-muted">
+                  {t('login')}
+                </Link>
+                <Link href="/register" className="rounded-md px-2 py-2 font-medium text-brand">
+                  {t('register')}
+                </Link>
               </>
             ) : (
               <>
-                <Link href={`/profile/${user.username}`}>{t('profile')}</Link>
-                <Link href="/settings">{t('settings')}</Link>
-                {user.role !== 'USER' ? <Link href="/admin">{t('admin')}</Link> : null}
-                <button type="button" className="text-left" onClick={() => void logout()}>
+                <Link href={`/profile/${user.username}`} className="rounded-md px-2 py-2 text-content-muted">
+                  {t('profile')}
+                </Link>
+                <Link href="/settings" className="rounded-md px-2 py-2 text-content-muted">
+                  {t('settings')}
+                </Link>
+                {user.role !== 'USER' ? (
+                  <Link href="/admin" className="rounded-md px-2 py-2 text-content-muted">
+                    {t('admin')}
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  className="rounded-md px-2 py-2 text-left text-content-muted"
+                  onClick={() => void logout()}
+                >
                   {t('logout')}
                 </button>
               </>
             )}
-          </div>
+          </nav>
         </div>
       ) : null}
     </header>

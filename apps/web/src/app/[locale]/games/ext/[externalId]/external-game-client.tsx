@@ -46,20 +46,20 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
   const platforms = useMemo(() => previewPlatforms(preview), [preview]);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-6">
-        <div className="flex gap-5">
+    <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+      <div className="space-y-5">
+        <div className="flex gap-4">
           <GameCover
             name={preview.name}
             src={preview.coverImageUrl}
-            className="h-48 w-36 shrink-0 rounded-card"
+            className="h-40 w-28 shrink-0 rounded-card sm:h-48 sm:w-36"
             sizes="144px"
             priority
           />
-          <div className="space-y-3">
-            <h1 className="text-3xl font-bold">{preview.name}</h1>
-            <p className="text-content-muted">{preview.summary}</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="min-w-0 space-y-2">
+            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{preview.name}</h1>
+            <p className="text-sm text-content-muted">{preview.summary}</p>
+            <div className="flex flex-wrap gap-1.5">
               {preview.platforms.map((platform) => (
                 <Badge key={`${platform.abbreviation}-${platform.name}`}>{platform.abbreviation}</Badge>
               ))}
@@ -69,12 +69,16 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
                 </Badge>
               ))}
             </div>
-            <p className="text-sm text-content-subtle">
+            <p className="text-xs text-content-subtle">
               {[preview.developer, preview.publisher, preview.releaseDate?.slice(0, 4)]
                 .filter(Boolean)
                 .join(' · ')}
             </p>
           </div>
+        </div>
+
+        <div className="lg:hidden">
+          <ScorePanel score={EMPTY_SCORE} />
         </div>
 
         <p className="text-sm text-content-muted">{t('importCta')}</p>
@@ -90,14 +94,14 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
           />
         ) : (
           <p className="text-sm text-content-muted">
-            <Link href={loginPath(pathname)} className="text-brand underline">
+            <Link href={loginPath(pathname)} className="font-medium text-brand underline">
               {reviewsT('loginToReview')}
             </Link>
           </p>
         )}
       </div>
 
-      <aside className="space-y-4">
+      <aside className="hidden space-y-3 lg:sticky lg:top-20 lg:block lg:self-start">
         <ScorePanel score={EMPTY_SCORE} />
       </aside>
     </div>

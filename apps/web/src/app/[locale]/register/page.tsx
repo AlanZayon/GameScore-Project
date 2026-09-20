@@ -51,8 +51,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="container-page flex max-w-md flex-col gap-6 py-16">
-      <h1 className="text-3xl font-bold">{t('registerTitle')}</h1>
+    <main className="container-page flex max-w-md flex-col gap-5 py-10">
+      <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('registerTitle')}</h1>
       <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
         <div>
           <Label htmlFor="email">{t('email')}</Label>

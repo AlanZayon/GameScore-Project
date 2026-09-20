@@ -33,7 +33,7 @@ export function CookieBanner() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface-raised px-4 py-4 shadow-lg"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface-raised px-4 py-3 shadow-md"
       role="dialog"
       aria-label={t('title')}
     >

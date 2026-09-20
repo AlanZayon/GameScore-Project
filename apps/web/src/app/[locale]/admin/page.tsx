@@ -174,9 +174,9 @@ export default function AdminPage() {
   ];
 
   return (
-    <main className="container-page space-y-6 py-10">
+    <main className="container-page space-y-5 py-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
         <p className="text-sm text-content-muted">{t('subtitle')}</p>
       </div>
 

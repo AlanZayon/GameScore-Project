@@ -9,19 +9,39 @@ export function GameCardSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex h-full overflow-hidden rounded-card border border-border-subtle bg-surface',
+        'flex h-full flex-col overflow-hidden rounded-card border border-border-subtle bg-surface',
         className,
       )}
       aria-hidden
     >
-      <Skeleton className="h-28 w-20 shrink-0 rounded-none" />
-      <div className="flex min-w-0 flex-1 flex-col gap-2 p-2.5">
-        <Skeleton className="h-4 w-[75%]" />
+      <Skeleton className="aspect-[2/3] w-full rounded-none" />
+      <div className="flex flex-1 flex-col gap-1.5 p-2.5">
+        <Skeleton className="h-4 w-[85%]" />
         <Skeleton className="h-3 w-1/2" />
-        <div className="mt-auto flex items-center justify-between gap-2">
-          <Skeleton className="h-5 w-20 rounded-md" />
-          <Skeleton className="h-4 w-10" />
+        <Skeleton className="h-3 w-2/3" />
+        <div className="mt-auto space-y-1.5 border-t border-border-subtle pt-2">
+          <div className="flex items-end justify-between gap-2">
+            <div className="space-y-1">
+              <Skeleton className="h-5 w-24 rounded-md" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            <Skeleton className="h-8 w-14" />
+          </div>
+          <Skeleton className="h-1 w-full rounded-sm" />
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function GamePosterSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex w-[8.5rem] shrink-0 flex-col sm:w-40 md:w-44', className)} aria-hidden>
+      <Skeleton className="h-[12.75rem] w-full rounded-md sm:h-[15rem] md:h-[16.5rem]" />
+      <div className="mt-1.5 space-y-1">
+        <Skeleton className="h-4 w-[95%]" />
+        <Skeleton className="h-4 w-20 rounded-md" />
+        <Skeleton className="h-3 w-2/3" />
       </div>
     </div>
   );
@@ -31,37 +51,36 @@ export function GameRowSkeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-2.5 border-b border-border-subtle px-1 py-2',
+        'flex items-center gap-3 border-b border-border-subtle px-1 py-2.5',
         className,
       )}
       aria-hidden
     >
-      <Skeleton className="h-11 w-8 shrink-0 rounded-sm" />
+      <Skeleton className="h-14 w-10 shrink-0 rounded-sm" />
       <div className="min-w-0 flex-1 space-y-1.5">
         <Skeleton className="h-4 w-2/3" />
         <Skeleton className="h-3 w-1/3" />
       </div>
-      <Skeleton className="h-5 w-10" />
+      <div className="flex flex-col items-end gap-1">
+        <Skeleton className="h-5 w-10" />
+        <Skeleton className="h-4 w-16 rounded-md" />
+      </div>
     </div>
   );
 }
 
 export function GameCardGridSkeleton({
   count = 8,
-  columns = 'home',
 }: {
   count?: number;
   columns?: 'home' | 'catalog' | 'rankings';
 }) {
-  const grid =
-    columns === 'catalog'
-      ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-3'
-      : columns === 'rankings'
-        ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-3'
-        : 'grid gap-2 sm:grid-cols-2 lg:grid-cols-4';
-
   return (
-    <div className={grid} aria-busy="true" aria-live="polite">
+    <div
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+      aria-busy="true"
+      aria-live="polite"
+    >
       {Array.from({ length: count }).map((_, index) => (
         <GameCardSkeleton key={index} />
       ))}
@@ -90,19 +109,23 @@ export function PageHeaderSkeleton({ withSubtitle = true }: { withSubtitle?: boo
 
 export function HomePageSkeleton() {
   return (
-    <main className="container-page space-y-8 py-6" aria-busy="true" aria-live="polite">
-      <section className="space-y-3">
+    <main className="space-y-8 py-6" aria-busy="true" aria-live="polite">
+      <section className="container-page space-y-3">
         <Skeleton className="h-5 w-full max-w-xl" />
         <Skeleton className="h-10 w-full max-w-lg rounded-md md:hidden" />
         <Skeleton className="h-3 w-48" />
       </section>
       {Array.from({ length: 3 }).map((_, section) => (
         <section key={section} className="space-y-3">
-          <div className="flex items-end justify-between">
+          <div className="container-page flex items-end justify-between">
             <Skeleton className="h-6 w-40" />
             <Skeleton className="h-4 w-16" />
           </div>
-          <GameRowListSkeleton count={4} />
+          <div className="flex gap-3 overflow-hidden px-4">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <GamePosterSkeleton key={index} />
+            ))}
+          </div>
         </section>
       ))}
     </main>
@@ -118,7 +141,7 @@ export function CatalogPageSkeleton() {
         <Skeleton className="h-9 w-36 rounded-md" />
         <Skeleton className="h-9 w-32 rounded-md" />
       </div>
-      <GameRowListSkeleton count={9} />
+      <GameCardGridSkeleton count={10} />
     </main>
   );
 }
@@ -167,7 +190,7 @@ export function RankingsPageSkeleton() {
           <Skeleton key={index} className="h-9 w-24 rounded-md" />
         ))}
       </div>
-      <GameRowListSkeleton count={8} />
+      <GameCardGridSkeleton count={10} />
     </main>
   );
 }
@@ -177,7 +200,7 @@ export function SearchPageSkeleton() {
     <main className="container-page space-y-5 py-6" aria-busy="true" aria-live="polite">
       <PageHeaderSkeleton withSubtitle={false} />
       <Skeleton className="h-4 w-64" />
-      <GameRowListSkeleton count={6} />
+      <GameCardGridSkeleton count={8} />
     </main>
   );
 }

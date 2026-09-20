@@ -3,7 +3,7 @@
 import type { RankingResponseDto } from '@gamescore/types';
 import { useTranslations } from 'next-intl';
 
-import { GameRow } from '@/components/game/game-card';
+import { GameCard } from '@/components/game/game-card';
 import { EmptyState, ErrorState, Tabs } from '@/components/ui/misc';
 import { usePathname, useRouter } from '@/i18n/navigation';
 
@@ -38,10 +38,10 @@ export function RankingsClient({
       ) : !initial || initial.entries.length === 0 ? (
         <EmptyState title={t('empty')} />
       ) : (
-        <ol className="flex flex-col border-t border-border-subtle">
+        <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {initial.entries.map((entry, index) => (
             <li key={entry.game.id}>
-              <GameRow game={entry.game} rank={entry.position} priority={index === 0} />
+              <GameCard game={entry.game} rank={entry.position} priority={index === 0} />
             </li>
           ))}
         </ol>

@@ -149,7 +149,7 @@ export class RankingsService {
           where: { deletedAt: null, status: 'PUBLISHED' },
           include: {
             user: { select: { username: true, avatarUrl: true } },
-            game: { select: { slug: true, name: true, coverImageUrl: true } },
+            game: { select: { slug: true, name: true, coverImageUrl: true, developer: true } },
           },
           orderBy: { createdAt: 'desc' },
           take: 6,
@@ -171,6 +171,7 @@ export class RankingsService {
           gameSlug: review.game.slug,
           gameName: review.game.name,
           gameCoverImageUrl: review.game.coverImageUrl,
+          gameDeveloper: review.game.developer,
           authorUsername: review.user.username,
           authorAvatarUrl: review.user.avatarUrl,
           recommended: review.recommended,

@@ -31,6 +31,10 @@ export interface ExternalGamePreviewDto {
   description: string | null;
   coverImageUrl: string | null;
   bannerImageUrl: string | null;
+  /** YouTube video id from IGDB, when available. */
+  trailerYoutubeId: string | null;
+  /** Screenshot URLs from IGDB (same hosts as imported games). */
+  galleryImageUrls: string[];
   releaseDate: string | null;
   developer: string | null;
   publisher: string | null;

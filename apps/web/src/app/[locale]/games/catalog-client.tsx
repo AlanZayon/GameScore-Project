@@ -5,7 +5,7 @@ import { GAME_SORTS } from '@gamescore/shared';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 
-import { GameRow } from '@/components/game/game-card';
+import { GameCard } from '@/components/game/game-card';
 import { EmptyState, Pagination } from '@/components/ui/misc';
 
 export function CatalogClient({
@@ -82,9 +82,9 @@ export function CatalogClient({
       {games.items.length === 0 ? (
         <EmptyState title={t('empty')} />
       ) : (
-        <div className="flex flex-col border-t border-border-subtle">
-          {games.items.map((game) => (
-            <GameRow key={game.id} game={game} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {games.items.map((game, index) => (
+            <GameCard key={game.id} game={game} priority={index === 0} />
           ))}
         </div>
       )}

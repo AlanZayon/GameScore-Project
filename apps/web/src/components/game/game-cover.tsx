@@ -59,7 +59,7 @@ export function GameCover({
             fill
             sizes={sizes}
             priority={priority}
-            className={cn('object-cover', imgClassName)}
+            className={cn('object-cover object-center', imgClassName)}
             onError={() => setFailed(true)}
           />
         ) : (
@@ -68,12 +68,12 @@ export function GameCover({
             src={remote}
             alt=""
             loading={priority ? 'eager' : 'lazy'}
-            className={cn('h-full w-full object-cover', imgClassName)}
+            className={cn('absolute inset-0 h-full w-full object-cover object-center', imgClassName)}
             onError={() => setFailed(true)}
           />
         )
       ) : (
-        <CoverFallback name={name} />
+        <CoverFallback name={name} className="absolute inset-0" />
       )}
     </div>
   );

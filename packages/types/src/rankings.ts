@@ -36,6 +36,7 @@ export interface HomeRecentReviewDto {
   gameSlug: string;
   gameName: string;
   gameCoverImageUrl: string | null;
+  gameDeveloper: string | null;
   authorUsername: string;
   authorAvatarUrl: string | null;
   recommended: boolean;

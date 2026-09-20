@@ -55,10 +55,15 @@ export class GameImportService {
       include: { game: true },
     });
     if (existing) {
+      // Imports that predate gallery/trailer columns still have screenshots in
+      // rawPayload — repair those fields so the game page has media without a
+      // full IGDB re-sync.
+      await this.repairMediaFromStoredPayload(existing.gameId);
+      const game = await this.games.findById(existing.gameId);
       return {
         gameId: existing.gameId,
-        slug: existing.game.slug,
-        name: existing.game.name,
+        slug: game?.slug ?? existing.game.slug,
+        name: game?.name ?? existing.game.name,
         provider: 'IGDB',
         externalId,
         created: false,
@@ -72,6 +77,50 @@ export class GameImportService {
     }
 
     return this.persist(payload, true);
+  }
+
+  /**
+   * Fills empty trailer / gallery / banner from the stored IGDB payload when
+   * those columns were added after the original import (or never mapped).
+   * Skips fields listed in `editedFields`.
+   */
+  async repairMediaFromStoredPayload(gameId: string): Promise<boolean> {
+    const game = await this.games.findById(gameId);
+    if (!game) return false;
+
+    const edited = new Set(game.editedFields);
+    const needsGallery = !edited.has('galleryImageUrls') && (game.galleryImageUrls?.length ?? 0) === 0;
+    const needsTrailer = !edited.has('trailerYoutubeId') && !game.trailerYoutubeId;
+    const needsBanner = !edited.has('bannerImageUrl') && !game.bannerImageUrl;
+    if (!needsGallery && !needsTrailer && !needsBanner) return false;
+
+    const source = await this.prisma.gameExternalSource.findFirst({
+      where: { gameId, provider: 'IGDB' },
+    });
+    if (!source?.rawPayload || typeof source.rawPayload !== 'object' || Array.isArray(source.rawPayload)) {
+      return false;
+    }
+
+    const mapped = this.map(source.rawPayload as unknown as IgdbGame, []);
+    const patch: {
+      bannerImageUrl?: string | null;
+      trailerYoutubeId?: string | null;
+      galleryImageUrls?: string[];
+      editedFields: string[];
+    } = { editedFields: game.editedFields };
+
+    if (needsBanner && mapped.bannerImageUrl) patch.bannerImageUrl = mapped.bannerImageUrl;
+    if (needsTrailer && mapped.trailerYoutubeId) patch.trailerYoutubeId = mapped.trailerYoutubeId;
+    if (needsGallery && mapped.galleryImageUrls.length > 0) {
+      patch.galleryImageUrls = mapped.galleryImageUrls;
+    }
+
+    if (!('bannerImageUrl' in patch) && !('trailerYoutubeId' in patch) && !('galleryImageUrls' in patch)) {
+      return false;
+    }
+
+    await this.games.updateEditorial(gameId, patch);
+    return true;
   }
 
   async importByName(name: string): Promise<ImportGameResultDto> {

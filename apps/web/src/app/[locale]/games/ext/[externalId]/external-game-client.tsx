@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 import { ReviewForm } from '@/components/game/review-form';
 import { ScorePanel } from '@/components/game/score-panel';
 import { GameCover } from '@/components/game/game-cover';
+import { GameMedia } from '@/components/game/game-media';
 import { useAuth } from '@/components/providers/auth-provider';
 import { Badge } from '@/components/ui/badge';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
@@ -76,6 +77,12 @@ export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDt
             </p>
           </div>
         </div>
+
+        <GameMedia
+          gameName={preview.name}
+          trailerYoutubeId={preview.trailerYoutubeId}
+          galleryImageUrls={preview.galleryImageUrls ?? []}
+        />
 
         <div className="lg:hidden">
           <ScorePanel score={EMPTY_SCORE} />

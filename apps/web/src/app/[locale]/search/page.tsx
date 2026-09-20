@@ -1,6 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { GameRow } from '@/components/game/game-card';
+import { GameCard } from '@/components/game/game-card';
 import { ExternalGameCard } from '@/components/search/external-game-card';
 import { SearchBox } from '@/components/search/search-box';
 import { EmptyState, ErrorState } from '@/components/ui/misc';
@@ -50,23 +50,23 @@ export default async function SearchPage({
       {empty ? <EmptyState title={t('empty')} /> : null}
 
       {hasLocal ? (
-        <section className="space-y-2">
+        <section className="space-y-3">
           <h2 className="font-display text-lg font-semibold">{t('inCatalogue')}</h2>
-          <div className="flex flex-col border-t border-border-subtle">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {result!.items.map((game) => (
-              <GameRow key={game.id} game={game} />
+              <GameCard key={game.id} game={game} />
             ))}
           </div>
         </section>
       ) : null}
 
       {hasExternal ? (
-        <section className="space-y-2">
+        <section className="space-y-3">
           <div>
             <h2 className="font-display text-lg font-semibold">{t('availableOnline')}</h2>
             <p className="text-sm text-content-muted">{t('availableOnlineHint')}</p>
           </div>
-          <div className="flex flex-col border-t border-border-subtle">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {result!.externalItems.map((hit) => (
               <ExternalGameCard key={hit.externalId} hit={hit} />
             ))}

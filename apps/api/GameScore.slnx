@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GameScore.Api/GameScore.Api.csproj" />
+    <Project Path="src/GameScore.Application/GameScore.Application.csproj" />
+    <Project Path="src/GameScore.Domain/GameScore.Domain.csproj" />
+    <Project Path="src/GameScore.Infrastructure/GameScore.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GameScore.Api.Tests/GameScore.Api.Tests.csproj" />
+    <Project Path="tests/GameScore.Domain.Tests/GameScore.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -326,7 +326,7 @@ function ReputationTab({
           label={t('rankingWeight')}
           value={`${Math.round(stats.reputation.rankingWeightRatio * 100)}%`}
         />
-        {stats.reputation.moderationNet !== null ? (
+        {typeof stats.reputation.moderationNet === 'number' ? (
           <Stat label={t('moderationNet')} value={stats.reputation.moderationNet} />
         ) : (
           <Stat label={t('reviewsPublished')} value={breakdown.reviewsPublished} />

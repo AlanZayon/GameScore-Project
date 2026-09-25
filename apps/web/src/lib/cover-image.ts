@@ -27,7 +27,23 @@ export function isOptimizableCoverUrl(url: string): boolean {
   }
 }
 
+/**
+ * IGDB `t_cover_big` is only ~264px wide and looks soft in search/catalogue grids
+ * on retina displays. Prefer the 720p portrait variant (~540×720) when present.
+ */
+export function upgradeIgdbCoverUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== 'images.igdb.com' && !parsed.hostname.endsWith('.images.igdb.com')) {
+      return url;
+    }
+    return url.replace(/\/t_[^/]+\//, '/t_720p/');
+  } catch {
+    return url;
+  }
+}
+
 export function resolveCoverImageUrl(name: string, url: string | null | undefined): string | null {
-  if (isRemoteCoverUrl(url)) return url;
+  if (isRemoteCoverUrl(url)) return upgradeIgdbCoverUrl(url);
   return null;
 }

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 
 import { cn } from '@/lib/cn';
-import { isOptimizableCoverUrl, isRemoteCoverUrl } from '@/lib/cover-image';
+import { isOptimizableCoverUrl, isRemoteCoverUrl, upgradeIgdbCoverUrl } from '@/lib/cover-image';
 
 function CoverFallback({ name, className }: { name: string; className?: string }) {
   const initials = name
@@ -45,7 +45,7 @@ export function GameCover({
   sizes?: string;
   priority?: boolean;
 }) {
-  const remote = isRemoteCoverUrl(src) ? src : null;
+  const remote = isRemoteCoverUrl(src) ? upgradeIgdbCoverUrl(src) : null;
   const [failed, setFailed] = useState(false);
   const optimizable = remote !== null && isOptimizableCoverUrl(remote);
 

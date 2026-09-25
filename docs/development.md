@@ -2,7 +2,10 @@
 
 ## Prerequisites
 
-Node 20.11+, Docker Desktop, pnpm via Corepack:
+- Node 20.11+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- Docker Desktop
+- pnpm via Corepack:
 
 ```bash
 corepack enable
@@ -22,13 +25,21 @@ pnpm db:seed
 pnpm dev
 ```
 
-Day to day, Postgres, Redis and Mailpit run in Docker. The API (port 3001) and web app (port 3000) run on the host. Open http://localhost:8025 to read emails sent by password reset and email confirmation.
+Day to day, Postgres, Redis and Mailpit run in Docker. The API (port 3001, ASP.NET) and web app (port 3000, Next.js) run on the host. Open http://localhost:8025 to read emails sent by password reset and email confirmation.
+
+API-only:
+
+```bash
+pnpm --filter @gamescore/api dev
+# or
+dotnet run --project apps/api/src/GameScore.Api
+```
 
 ## Tests
 
 ```bash
-pnpm test          # unit + integration (real gamescore_test database)
-pnpm test:e2e      # API-level journey against the same test database
+pnpm test          # web + API (dotnet test for API domain/smoke)
+pnpm test:api      # GameScore.slnx tests
 pnpm lint
 pnpm typecheck
 pnpm build
@@ -78,8 +89,3 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 12. Dark theme is the default; the header toggle switches to light and back.
 13. Admin (`admin@gamescore.dev`) can list games, edit a game, remove/restore a review, resolve reports, confirm a review bomb, suspend a user and see the dashboard.
 14. Moderator (`moderator@gamescore.dev`) can moderate reviews/reports/bombs, list and suspend users, but cannot list games or import from IGDB.
-15. Errors from the API are `{ code, message }`; the UI translates `code` in pt-BR and en.
-16. Swagger is at http://localhost:3001/api/docs.
-17. Settings can export personal data and delete (anonymise) the account. `/terms`, `/privacy` and `/cookies` load.
-18. `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e` and `pnpm build` all pass.
-19. `docker compose up -d` keeps Postgres, Redis and Mailpit healthy. Optional: `docker compose --profile apps up --build` for the full stack.

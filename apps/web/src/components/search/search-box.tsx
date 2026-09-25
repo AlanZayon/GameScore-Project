@@ -62,6 +62,7 @@ export function SearchBox({
 
   function goTo(item: AutocompleteItemDto) {
     setOpen(false);
+    setActive(-1);
     router.push(suggestionHref(item));
   }
 
@@ -102,6 +103,14 @@ export function SearchBox({
             event.preventDefault();
             setActive((value) => (value <= 0 ? suggestions.length - 1 : value - 1));
           }
+          if (event.key === 'Enter' && active >= 0 && suggestions[active]) {
+            event.preventDefault();
+            goTo(suggestions[active]);
+          }
+          if (event.key === 'Escape') {
+            setOpen(false);
+            setActive(-1);
+          }
         }}
       />
       {open && suggestions.length > 0 ? (
@@ -117,7 +126,12 @@ export function SearchBox({
                 className={`flex items-center gap-3 px-3 py-2 text-sm hover:bg-surface-hover ${
                   index === active ? 'bg-surface-hover' : ''
                 }`}
-                onClick={() => setOpen(false)}
+                // Prevent input blur from unmounting the list before the click navigates.
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  goTo(item);
+                }}
               >
                 <GameCover
                   name={item.name}

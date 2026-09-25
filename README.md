@@ -14,14 +14,14 @@ that proportion.
 | Layer     | Choice                                                                 |
 | --------- | ---------------------------------------------------------------------- |
 | Frontend  | Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, TanStack Query, next-intl |
-| Backend   | NestJS 11 (modular monolith), TypeScript, Prisma 6                     |
-| Database  | PostgreSQL 18 (full text search + trigram, no separate search engine)  |
+| Backend   | ASP.NET Core 10 (modular monolith), EF Core, Hangfire                  |
+| Database  | PostgreSQL 18 (full text search + trigram; Prisma migrations)          |
 | Cache     | Redis (optional — the app runs without it)                             |
-| Local ops | Docker Compose, pnpm workspaces                                        |
+| Local ops | Docker Compose, pnpm workspaces + .NET 10 SDK                          |
 
 ## Quick start
 
-Requirements: Node 20.11+, Docker Desktop, and pnpm via Corepack (`corepack enable` then `corepack prepare pnpm@11.21.0 --activate`). On Windows, restart the shell afterwards, or run `corepack pnpm …` until `pnpm` is on `PATH`.
+Requirements: Node 20.11+, [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), Docker Desktop, and pnpm via Corepack (`corepack enable` then `corepack prepare pnpm@11.21.0 --activate`). On Windows, restart the shell afterwards, or run `corepack pnpm …` until `pnpm` is on `PATH`.
 
 ```bash
 cp .env.example .env        # Windows: Copy-Item .env.example .env
@@ -70,10 +70,10 @@ docker compose --profile apps up --build
 
 ```text
 apps/
-  api/                 NestJS API (modular monolith)
+  api/                 ASP.NET Core 10 API (GameScore.slnx) + Prisma schema/migrations
   web/                 Next.js application
 packages/
-  shared/              Scoring maths, score labels, shared enums (used by both apps)
+  shared/              Scoring maths, score labels, shared enums (web + C# golden tests)
   types/               HTTP contract shared between API and web
   config/              Shared TypeScript and ESLint configuration
 infrastructure/docker/ Dockerfiles

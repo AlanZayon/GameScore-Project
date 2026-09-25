@@ -5,6 +5,10 @@ coverage/
 .next/
 out/
 *.tsbuildinfo
+bin/
+obj/
+*.user
+*.suo
 
 .env
 .env.local

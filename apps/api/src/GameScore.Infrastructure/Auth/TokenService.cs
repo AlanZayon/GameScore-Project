@@ -26,7 +26,7 @@ public sealed class TokenService
         _logger = logger;
     }
 
-    public string SignAccessToken(Guid userId, string username, string role)
+    public string SignAccessToken(Guid userId, string username, string role, int reputationScore)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.Jwt.AccessSecret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -35,6 +35,7 @@ public sealed class TokenService
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim("username", username),
             new Claim("role", role),
+            new Claim("reputationScore", reputationScore.ToString()),
             new Claim("type", "access"),
         };
 

@@ -121,7 +121,11 @@ public sealed class AuthService
         }
 
         await AssertUsableAsync(user, cancellationToken);
-        var accessToken = _tokens.SignAccessToken(user.Id, user.Username, user.Role.ToString());
+        var accessToken = _tokens.SignAccessToken(
+            user.Id,
+            user.Username,
+            user.Role.ToString(),
+            user.ReputationScore);
         return (
             new AuthSessionResponse(
                 accessToken,
@@ -310,7 +314,11 @@ public sealed class AuthService
         CancellationToken cancellationToken)
     {
         await AssertUsableAsync(user, cancellationToken);
-        var accessToken = _tokens.SignAccessToken(user.Id, user.Username, user.Role.ToString());
+        var accessToken = _tokens.SignAccessToken(
+            user.Id,
+            user.Username,
+            user.Role.ToString(),
+            user.ReputationScore);
         var refresh = await _tokens.IssueRefreshTokenAsync(user.Id, userAgent, cancellationToken);
         return (
             new AuthSessionResponse(

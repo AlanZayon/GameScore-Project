@@ -29,7 +29,7 @@ public sealed class HealthController(
         {
             status = databaseUp ? "ok" : "degraded",
             environment = config.Value.NodeEnv,
-            uptimeSeconds = (int)Environment.TickCount64 / 1000,
+            uptimeSeconds = (int)(Environment.TickCount64 / 1000),
             timestamp = DateTime.UtcNow.ToString("O"),
             checks = new { database = databaseUp ? "up" : "down" },
             features = new

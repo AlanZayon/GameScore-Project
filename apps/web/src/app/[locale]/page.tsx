@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { AdSlot } from '@/components/ads/ad-slot';
@@ -7,7 +8,29 @@ import { SearchBox } from '@/components/search/search-box';
 import { ErrorState } from '@/components/ui/misc';
 import { Link } from '@/i18n/navigation';
 import { apiFetch } from '@/lib/api';
+import {
+  buildPageMetadata,
+  JsonLd,
+  organizationJsonLd,
+  webSiteJsonLd,
+} from '@/lib/seo';
 import type { HomeFeedDto, HomeRecentReviewDto } from '@gamescore/types';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'home' });
+  return buildPageMetadata({
+    locale,
+    path: '/',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    absoluteTitle: true,
+  });
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -39,7 +62,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <main className="space-y-8 py-6">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@graph': [organizationJsonLd(t('metaDescription')), webSiteJsonLd(locale, t('metaDescription'))],
+        }}
+      />
       <section className="container-page space-y-3">
+        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('heroTitle')}</h1>
         <p className="max-w-2xl text-sm text-content-muted sm:text-base">{t('heroSubtitle')}</p>
         <div className="md:hidden">
           <SearchBox />

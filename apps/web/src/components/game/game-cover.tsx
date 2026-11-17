@@ -55,7 +55,7 @@ export function GameCover({
         optimizable ? (
           <Image
             src={remote}
-            alt=""
+            alt={name}
             fill
             sizes={sizes}
             priority={priority}
@@ -66,7 +66,7 @@ export function GameCover({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={remote}
-            alt=""
+            alt={name}
             loading={priority ? 'eager' : 'lazy'}
             className={cn('absolute inset-0 h-full w-full object-cover object-center', imgClassName)}
             onError={() => setFailed(true)}

@@ -1,16 +1,55 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { CatalogClient } from './catalog-client';
 import { ErrorState } from '@/components/ui/misc';
 import { apiFetch, qs } from '@/lib/api';
+import { buildPageMetadata } from '@/lib/seo';
 import type { GenreDto, PaginatedResponse, PlatformDto, GameSummaryDto } from '@gamescore/types';
+
+type CatalogSearchParams = {
+  page?: string;
+  platform?: string;
+  genre?: string;
+  sort?: string;
+};
+
+function catalogHasFilters(query: CatalogSearchParams): boolean {
+  const page = query.page ? Number(query.page) : 1;
+  const sort = query.sort ?? 'POPULAR';
+  return (
+    (Number.isFinite(page) && page > 1) ||
+    Boolean(query.platform) ||
+    Boolean(query.genre) ||
+    sort !== 'POPULAR'
+  );
+}
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<CatalogSearchParams>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const query = await searchParams;
+  const t = await getTranslations({ locale, namespace: 'catalog' });
+  return buildPageMetadata({
+    locale,
+    path: '/games',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    robots: catalogHasFilters(query) ? { index: false, follow: true } : undefined,
+  });
+}
 
 export default async function GamesPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ page?: string; platform?: string; genre?: string; sort?: string }>;
+  searchParams: Promise<CatalogSearchParams>;
 }) {
   const { locale } = await params;
   const query = await searchParams;

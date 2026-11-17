@@ -145,9 +145,15 @@ export function GameDetailClient({
               <p className="text-sm text-content-muted">{game.summary}</p>
               {longDescription ? (
                 <div className="space-y-2">
-                  {descriptionOpen ? (
-                    <p className="whitespace-pre-wrap text-sm text-content-muted">{game.description}</p>
-                  ) : null}
+                  <p
+                    className={
+                      descriptionOpen
+                        ? 'whitespace-pre-wrap text-sm text-content-muted'
+                        : 'line-clamp-4 whitespace-pre-wrap text-sm text-content-muted'
+                    }
+                  >
+                    {game.description}
+                  </p>
                   <button
                     type="button"
                     className="text-sm font-medium text-brand hover:underline"

@@ -8,7 +8,6 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { NavigationProgress } from '@/components/layout/navigation-progress';
 import { CookieBanner } from '@/components/legal/cookie-banner';
-import { DocumentLang } from '@/components/providers/document-lang';
 import { IntlProvider } from '@/components/providers/intl-provider';
 import { routing } from '@/i18n/routing';
 import { publicEnv } from '@/lib/env';
@@ -40,13 +39,6 @@ export async function generateMetadata({
       ],
       apple: [{ url: '/apple-icon', type: 'image/png', sizes: '180x180' }],
     },
-    alternates: {
-      canonical: '/',
-      languages: {
-        'pt-BR': '/',
-        en: '/en',
-      },
-    },
     openGraph: {
       type: 'website',
       siteName: 'GameScore',
@@ -77,7 +69,6 @@ export default async function LocaleLayout({
 
   return (
     <IntlProvider locale={locale} messages={messages}>
-      <DocumentLang locale={locale} />
       <NavigationProgress />
       <div className="flex min-h-dvh flex-col">
         <SiteHeader />

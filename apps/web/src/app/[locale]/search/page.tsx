@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { GameCard } from '@/components/game/game-card';
@@ -5,7 +6,24 @@ import { ExternalGameCard } from '@/components/search/external-game-card';
 import { SearchBox } from '@/components/search/search-box';
 import { EmptyState, ErrorState } from '@/components/ui/misc';
 import { apiFetch, qs } from '@/lib/api';
+import { buildPageMetadata } from '@/lib/seo';
 import type { SearchResultDto } from '@gamescore/types';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'searchPage' });
+  return buildPageMetadata({
+    locale,
+    path: '/search',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    robots: { index: false, follow: true },
+  });
+}
 
 export default async function SearchPage({
   params,

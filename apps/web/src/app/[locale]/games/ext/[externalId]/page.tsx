@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 
 import { ExternalGameClient } from './external-game-client';
 import { apiFetch, ApiError } from '@/lib/api';
 import { resolveCoverImageUrl } from '@/lib/cover-image';
-import { publicEnv } from '@/lib/env';
 import { redirect } from '@/i18n/navigation';
-import { routing } from '@/i18n/routing';
+import { buildPageMetadata } from '@/lib/seo';
 import type { ExternalGamePreviewDto } from '@gamescore/types';
-import { cache } from 'react';
 
 const loadPreview = cache(async (externalId: string) => {
   try {
@@ -27,31 +26,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, externalId } = await params;
   const preview = await loadPreview(externalId);
-  if (!preview) return { title: 'GameScore' };
+  if (!preview) return { title: 'GameScore', robots: { index: false, follow: false } };
 
-  const title = preview.name;
-  const description = preview.summary ?? preview.name;
-  const path =
-    locale === routing.defaultLocale
-      ? `/games/ext/${externalId}`
-      : `/${locale}/games/ext/${externalId}`;
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: `${publicEnv.siteUrl}${path}`,
-    },
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      images: (() => {
-        const cover = resolveCoverImageUrl(preview.name, preview.coverImageUrl);
-        return cover ? [{ url: cover }] : undefined;
-      })(),
-    },
-  };
+  const cover = resolveCoverImageUrl(preview.name, preview.coverImageUrl);
+  return buildPageMetadata({
+    locale,
+    path: `/games/ext/${externalId}`,
+    title: preview.name,
+    description: preview.summary ?? preview.name,
+    images: cover ? [cover] : undefined,
+    robots: { index: false, follow: true },
+  });
 }
 
 export default async function ExternalGamePage({

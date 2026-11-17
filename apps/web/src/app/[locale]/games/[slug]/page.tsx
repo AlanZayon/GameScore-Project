@@ -6,8 +6,12 @@ import { notFound } from 'next/navigation';
 import { GameDetailClient } from './game-detail-client';
 import { apiFetch, ApiError } from '@/lib/api';
 import { resolveCoverImageUrl } from '@/lib/cover-image';
-import { publicEnv } from '@/lib/env';
-import { routing } from '@/i18n/routing';
+import {
+  breadcrumbJsonLd,
+  buildPageMetadata,
+  JsonLd,
+  videoGameJsonLd,
+} from '@/lib/seo';
 import type { CursorPaginatedResponse, GameDetailDto, GameStatisticsDto, ReviewDto } from '@gamescore/types';
 
 const loadGame = cache(async (slug: string) => {
@@ -26,33 +30,23 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   const game = await loadGame(slug);
-  if (!game) return { title: 'GameScore' };
+  if (!game) return { title: 'GameScore', robots: { index: false, follow: false } };
 
-  const title = game.name;
-  const description = game.summary ?? game.name;
-  const canonical = locale === routing.defaultLocale ? `/games/${slug}` : `/${locale}/games/${slug}`;
+  const scorePart =
+    game.score.totalReviews > 0
+      ? `${Math.round(game.score.positivePercentage)}% · ${game.score.totalReviews} reviews`
+      : null;
+  const baseDescription = game.summary ?? game.name;
+  const description = scorePart ? `${baseDescription} (${scorePart})` : baseDescription;
+  const cover = resolveCoverImageUrl(game.name, game.coverImageUrl);
 
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: `${publicEnv.siteUrl}${canonical}`,
-      languages: {
-        'pt-BR': `${publicEnv.siteUrl}/games/${slug}`,
-        en: `${publicEnv.siteUrl}/en/games/${slug}`,
-      },
-    },
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      url: `${publicEnv.siteUrl}${canonical}`,
-      images: (() => {
-        const cover = resolveCoverImageUrl(game.name, game.coverImageUrl);
-        return cover ? [{ url: cover }] : undefined;
-      })(),
-    },
-  };
+  return buildPageMetadata({
+    locale,
+    path: `/games/${slug}`,
+    title: game.name,
+    description: description.slice(0, 300),
+    images: cover ? [cover] : undefined,
+  });
 }
 
 export default async function GamePage({
@@ -63,6 +57,8 @@ export default async function GamePage({
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('game');
+  const common = await getTranslations('common');
+  const nav = await getTranslations('nav');
 
   const game = await loadGame(slug);
   if (!game) notFound();
@@ -72,8 +68,33 @@ export default async function GamePage({
     apiFetch<CursorPaginatedResponse<ReviewDto>>(`/games/${slug}/reviews?limit=20&sort=BEST`),
   ]);
 
+  const cover = resolveCoverImageUrl(game.name, game.coverImageUrl);
+
   return (
     <main className="container-page space-y-6 py-6">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@graph': [
+            videoGameJsonLd({
+              locale,
+              name: game.name,
+              slug: game.slug,
+              description: game.summary ?? game.description,
+              image: cover,
+              genres: game.genres.map((genre) => genre.name),
+              releaseDate: game.releaseDate,
+              positivePercentage: game.score.positivePercentage,
+              totalReviews: game.score.totalReviews,
+            }),
+            breadcrumbJsonLd(locale, [
+              { name: common('appName'), path: '/' },
+              { name: nav('games'), path: '/games' },
+              { name: game.name, path: `/games/${game.slug}` },
+            ]),
+          ],
+        }}
+      />
       <p className="sr-only">{t('title')}</p>
       <GameDetailClient initialGame={game} initialStats={stats} initialReviews={reviews} />
     </main>

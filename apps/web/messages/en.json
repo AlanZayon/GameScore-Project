@@ -82,6 +82,8 @@
   "catalog": {
     "title": "Catalogue",
     "subtitle": "Filter by platform, genre or sort order.",
+    "metaTitle": "Game catalogue",
+    "metaDescription": "Browse the GameScore catalogue: filter by platform and genre, and sort by popularity, rating or release date.",
     "allPlatforms": "All platforms",
     "allGenres": "All genres",
     "empty": "No games match those filters.",
@@ -193,6 +195,8 @@
   "searchPage": {
     "title": "Search",
     "prompt": "Type a game name to search.",
+    "metaTitle": "Search games",
+    "metaDescription": "Search the GameScore catalogue and titles available to add.",
     "resultsFor": "Results for “{query}”",
     "empty": "No games found.",
     "inCatalogue": "In catalogue",
@@ -206,6 +210,8 @@
   "rankings": {
     "title": "Rankings",
     "subtitle": "Top rated uses the Wilson lower bound, not the raw percentage.",
+    "metaTitle": "Game rankings",
+    "metaDescription": "See top-rated, trending, new-release and popular games on GameScore.",
     "tabs": {
       "top-rated": "Top rated",
       "trending": "Trending",
@@ -252,6 +258,9 @@
     "termsRequired": "Accept the terms and privacy policy to create an account."
   },
   "profile": {
+    "metaTitle": "{name} on GameScore",
+    "metaDescription": "{name}'s GameScore profile — player reviews and reputation.",
+    "metaDescriptionBio": "{bio}",
     "reviews": "Reviews",
     "reputation": "Reputation",
     "useful": "Useful votes",
@@ -327,6 +336,8 @@
   },
   "settings": {
     "title": "Settings",
+    "metaTitle": "Settings",
+    "metaDescription": "Manage your GameScore profile and account.",
     "subtitle": "How you appear on GameScore.",
     "profileSaved": "Profile updated.",
     "bio": "Bio",
@@ -348,6 +359,8 @@
   },
   "admin": {
     "title": "Admin",
+    "metaTitle": "Admin",
+    "metaDescription": "GameScore administration panel.",
     "subtitle": "Moderation queues, reports, and admin tools.",
     "imported": "Game imported.",
     "importFailed": "Import failed. Check IGDB credentials.",

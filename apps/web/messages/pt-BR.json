@@ -82,6 +82,8 @@
   "catalog": {
     "title": "Catálogo",
     "subtitle": "Filtre por plataforma, gênero ou ordenação.",
+    "metaTitle": "Catálogo de jogos",
+    "metaDescription": "Explore o catálogo do GameScore: filtre por plataforma e gênero e ordene por popularidade, nota ou lançamento.",
     "allPlatforms": "Todas as plataformas",
     "allGenres": "Todos os gêneros",
     "empty": "Nenhum jogo encontrado com esses filtros.",
@@ -193,6 +195,8 @@
   "searchPage": {
     "title": "Busca",
     "prompt": "Digite o nome de um jogo para buscar.",
+    "metaTitle": "Buscar jogos",
+    "metaDescription": "Busque jogos no catálogo do GameScore e títulos disponíveis para adicionar.",
     "resultsFor": "Resultados para “{query}”",
     "empty": "Nenhum jogo encontrado.",
     "inCatalogue": "No catálogo",
@@ -206,6 +210,8 @@
   "rankings": {
     "title": "Rankings",
     "subtitle": "O ranking de mais bem avaliados usa o limite inferior de Wilson, não a porcentagem crua.",
+    "metaTitle": "Rankings de jogos",
+    "metaDescription": "Veja os jogos mais bem avaliados, em alta, lançamentos e populares no GameScore.",
     "tabs": {
       "top-rated": "Mais bem avaliados",
       "trending": "Em alta",
@@ -252,6 +258,9 @@
     "termsRequired": "Aceite os termos e a política de privacidade para criar a conta."
   },
   "profile": {
+    "metaTitle": "{name} no GameScore",
+    "metaDescription": "Perfil de {name} no GameScore — avaliações e reputação de jogador.",
+    "metaDescriptionBio": "{bio}",
     "reviews": "Avaliações",
     "reputation": "Reputação",
     "useful": "Votos úteis",
@@ -327,6 +336,8 @@
   },
   "settings": {
     "title": "Configurações",
+    "metaTitle": "Configurações",
+    "metaDescription": "Gerencie seu perfil e conta no GameScore.",
     "subtitle": "Como você aparece no GameScore.",
     "profileSaved": "Perfil atualizado.",
     "bio": "Bio",
@@ -348,6 +359,8 @@
   },
   "admin": {
     "title": "Administração",
+    "metaTitle": "Administração",
+    "metaDescription": "Painel administrativo do GameScore.",
     "subtitle": "Filas de moderação, denúncias e ferramentas administrativas.",
     "imported": "Jogo importado.",
     "importFailed": "Falha ao importar. Confira as credenciais IGDB.",

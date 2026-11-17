@@ -1,9 +1,33 @@
+import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { RankingsClient } from './rankings-client';
 import { RANKING_TABS, resolveRankingTab } from './ranking-tabs';
 import { apiFetch } from '@/lib/api';
+import { buildPageMetadata } from '@/lib/seo';
 import type { RankingResponseDto } from '@gamescore/types';
+
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const query = await searchParams;
+  const t = await getTranslations({ locale, namespace: 'rankings' });
+  const tab = resolveRankingTab(query.tab);
+  const isDefaultTab = tab === 'top-rated' && (!query.tab || query.tab === 'top-rated');
+
+  return buildPageMetadata({
+    locale,
+    path: '/rankings',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+    robots: isDefaultTab ? undefined : { index: false, follow: true },
+  });
+}
 
 export default async function RankingsPage({
   params,

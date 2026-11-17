@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { breadcrumbJsonLd, buildPageMetadata, JsonLd } from '@/lib/seo';
+
 export async function generateMetadata({
   params,
 }: {
@@ -8,13 +10,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'scoring' });
-  return { title: t('metaTitle'), description: t('metaDescription') };
+  return buildPageMetadata({
+    locale,
+    path: '/scoring',
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+  });
 }
 
 export default async function ScoringPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('scoring');
+  const common = await getTranslations('common');
+  const nav = await getTranslations('nav');
 
   const sections = [
     { title: t('publicTitle'), body: t('publicBody') },
@@ -26,6 +35,15 @@ export default async function ScoringPage({ params }: { params: Promise<{ locale
 
   return (
     <main className="container-page max-w-3xl space-y-6 py-6">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          ...breadcrumbJsonLd(locale, [
+            { name: common('appName'), path: '/' },
+            { name: nav('scoring'), path: '/scoring' },
+          ]),
+        }}
+      />
       <div className="space-y-2">
         <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{t('title')}</h1>
         <p className="text-base text-content-muted">{t('lead')}</p>

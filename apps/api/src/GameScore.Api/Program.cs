@@ -8,7 +8,9 @@ using GameScore.Api.RateLimiting;
 using GameScore.Application.Configuration;
 using GameScore.Infrastructure;
 using GameScore.Infrastructure.Jobs;
+using GameScore.Infrastructure.Persistence;
 using Hangfire;
+using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
@@ -108,6 +110,18 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<GameScoreDbContext>();
+        var catalogLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("CatalogBootstrap");
+        await CatalogBootstrap.EnsureAsync(db, catalogLogger);
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Failed to bootstrap platform/genre catalogue; continuing");
+    }
+
     try
     {
         var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();

@@ -608,9 +608,8 @@ public sealed class ReviewsService
 
         if (platform is null)
         {
-            throw new BadRequestException(
-                ErrorCodes.PlatformNotAvailableForGame,
-                "That platform is not listed for this game");
+            // Do not block publishing when the client sends an unmatched IGDB label.
+            return null;
         }
 
         var linked = await _db.GamePlatforms.AnyAsync(

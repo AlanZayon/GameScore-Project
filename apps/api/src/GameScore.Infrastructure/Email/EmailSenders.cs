@@ -1,4 +1,5 @@
 using GameScore.Application.Configuration;
+using GameScore.Application.Email;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,15 @@ public sealed class SmtpEmailSender(IOptions<AppConfig> config, ILogger<SmtpEmai
         mime.Body = new TextPart("plain") { Text = message.Text };
 
         using var client = new SmtpClient();
-        await client.ConnectAsync(smtp.Host, smtp.Port, smtp.Secure ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, cancellationToken);
+        // 465 = implicit TLS. 587 / Resend = STARTTLS when Secure=true.
+        // Secure=false = cleartext (Mailpit). Do not use SslOnConnect on 587.
+        var socketOptions = SmtpTls.Resolve(smtp.Port, smtp.Secure) switch
+        {
+            SmtpTlsMode.SslOnConnect => SecureSocketOptions.SslOnConnect,
+            SmtpTlsMode.StartTls => SecureSocketOptions.StartTls,
+            _ => SecureSocketOptions.None,
+        };
+        await client.ConnectAsync(smtp.Host, smtp.Port, socketOptions, cancellationToken);
         if (!string.IsNullOrEmpty(smtp.User))
         {
             await client.AuthenticateAsync(smtp.User, smtp.Pass, cancellationToken);
@@ -42,6 +51,6 @@ public sealed class SmtpEmailSender(IOptions<AppConfig> config, ILogger<SmtpEmai
 
         await client.SendAsync(mime, cancellationToken);
         await client.DisconnectAsync(true, cancellationToken);
-        logger.LogDebug("Sent email to {To}", message.To);
+        logger.LogInformation("Sent email to {To} via {Host}:{Port}", message.To, smtp.Host, smtp.Port);
     }
 }

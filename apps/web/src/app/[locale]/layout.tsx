@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
+import { EmailVerificationBanner } from '@/components/auth/email-verification-banner';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { NavigationProgress } from '@/components/layout/navigation-progress';
@@ -72,6 +73,7 @@ export default async function LocaleLayout({
       <NavigationProgress />
       <div className="flex min-h-dvh flex-col">
         <SiteHeader />
+        <EmailVerificationBanner />
         <div className="flex-1">{children}</div>
         <SiteFooter />
         <CookieBanner />

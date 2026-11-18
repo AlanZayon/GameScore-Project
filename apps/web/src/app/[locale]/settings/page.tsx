@@ -163,8 +163,9 @@ export default function SettingsPage() {
       </div>
 
       {!account.emailVerified ? (
-        <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-3">
+        <div className="rounded-md border border-amber-500/40 bg-surface-raised px-3 py-3">
           <p className="text-sm text-content-muted">{t('verifyBanner')}</p>
+          <p className="mt-1 text-xs text-content-subtle">{t('verifyHow')}</p>
           <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={resending} onClick={() => void resendVerification()}>
             {resending ? authT('submitting') : t('resendVerification')}
           </Button>

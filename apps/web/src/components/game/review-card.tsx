@@ -47,10 +47,23 @@ export function ReviewCard({
   const [busy, setBusy] = useState(false);
 
   const next = loginPath(pathname);
+  const needsEmailVerification = Boolean(user && !user.emailVerified);
 
-  async function vote(useful: boolean) {
+  function requireVerified(action: 'vote' | 'report'): boolean {
     if (!user) {
       router.push(next);
+      return false;
+    }
+    if (needsEmailVerification) {
+      toast.push(action === 'vote' ? t('verifyToVote') : t('verifyToReport'), 'error');
+      router.push('/settings');
+      return false;
+    }
+    return true;
+  }
+
+  async function vote(useful: boolean) {
+    if (!requireVerified('vote')) {
       return;
     }
     try {
@@ -73,6 +86,9 @@ export function ReviewCard({
   }
 
   async function report() {
+    if (!requireVerified('report')) {
+      return;
+    }
     try {
       await apiFetch(`/reviews/${review.id}/report`, {
         method: 'POST',
@@ -167,7 +183,7 @@ export function ReviewCard({
               size="sm"
               variant={review.viewerVote === 'USEFUL' ? 'primary' : 'secondary'}
               onClick={() => void vote(true)}
-              title={!user ? t('loginToVote') : undefined}
+              title={!user ? t('loginToVote') : needsEmailVerification ? t('verifyToVote') : undefined}
             >
               {t('useful')} ({review.usefulCount})
             </Button>
@@ -175,12 +191,22 @@ export function ReviewCard({
               size="sm"
               variant={review.viewerVote === 'NOT_USEFUL' ? 'primary' : 'secondary'}
               onClick={() => void vote(false)}
-              title={!user ? t('loginToVote') : undefined}
+              title={!user ? t('loginToVote') : needsEmailVerification ? t('verifyToVote') : undefined}
             >
               {t('notUseful')} ({review.notUsefulCount})
             </Button>
             {user && !review.viewerIsAuthor && !review.viewerHasReported ? (
-              <Button size="sm" variant="ghost" onClick={() => setReportOpen(true)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  if (!requireVerified('report')) {
+                    return;
+                  }
+                  setReportOpen(true);
+                }}
+                title={needsEmailVerification ? t('verifyToReport') : undefined}
+              >
                 {t('report')}
               </Button>
             ) : null}

@@ -48,7 +48,7 @@ Prefer the repo Blueprint [`render.yaml`](../render.yaml) (New → Blueprint), o
 | `CORS_ORIGINS` | exact Vercel origin, e.g. `https://gamescore-xxx.vercel.app` (no trailing slash) |
 | `NEXT_PUBLIC_SITE_URL` | same Vercel origin (used in email links) |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | required in production |
-| `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | as needed by your provider |
+| `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | Resend: host `smtp.resend.com`, port `587`, `SMTP_SECURE=true` (STARTTLS), user `resend`, pass = API key. `onboarding@resend.dev` only delivers to your Resend account email until you verify a domain. |
 | `ENABLE_SWAGGER` | `false` |
 | `LOG_LEVEL` | `info` |
 | `REDIS_URL` | recommended (Render Redis / Upstash) |

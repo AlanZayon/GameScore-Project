@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace GameScore.Infrastructure.Persistence;
@@ -142,7 +143,12 @@ public sealed class GameScoreDbContext(DbContextOptions<GameScoreDbContext> opti
             e.Property(x => x.GalleryImageUrls).HasColumnName("galleryImageUrls");
             e.Property(x => x.ViewCount).HasColumnName("viewCount");
             e.Property(x => x.EditedFields).HasColumnName("editedFields");
-            e.Property(x => x.SearchVector).HasColumnName("searchVector");
+            // GENERATED ALWAYS AS (...) STORED in Postgres — EF must never write it.
+            e.Property(x => x.SearchVector)
+                .HasColumnName("searchVector")
+                .ValueGeneratedOnAddOrUpdate();
+            e.Property(x => x.SearchVector).Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Ignore);
+            e.Property(x => x.SearchVector).Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
             e.Property(x => x.CreatedAt).HasColumnName("createdAt");
             e.Property(x => x.UpdatedAt).HasColumnName("updatedAt");
         });

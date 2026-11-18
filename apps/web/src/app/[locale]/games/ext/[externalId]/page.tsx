@@ -8,7 +8,7 @@ import { apiFetch, ApiError } from '@/lib/api';
 import { resolveCoverImageUrl } from '@/lib/cover-image';
 import { redirect } from '@/i18n/navigation';
 import { buildPageMetadata } from '@/lib/seo';
-import type { ExternalGamePreviewDto } from '@gamescore/types';
+import type { ExternalGamePreviewDto, PlatformDto } from '@gamescore/types';
 
 const loadPreview = cache(async (externalId: string) => {
   try {
@@ -55,10 +55,17 @@ export default async function ExternalGamePage({
     redirect({ href: `/games/${preview.localSlug}`, locale });
   }
 
+  let catalogPlatforms: PlatformDto[] = [];
+  try {
+    catalogPlatforms = await apiFetch<PlatformDto[]>('/platforms', { revalidate: 3600 });
+  } catch {
+    catalogPlatforms = [];
+  }
+
   return (
     <main className="container-page space-y-6 py-6">
       <p className="sr-only">{t('title')}</p>
-      <ExternalGameClient preview={preview} />
+      <ExternalGameClient preview={preview} catalogPlatforms={catalogPlatforms} />
     </main>
   );
 }

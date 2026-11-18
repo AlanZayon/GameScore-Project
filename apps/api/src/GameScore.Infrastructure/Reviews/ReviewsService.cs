@@ -115,7 +115,7 @@ public sealed class ReviewsService
         int? rating,
         string text,
         int? hoursPlayed,
-        Guid? platformId,
+        string? platformId,
         string? clientIp,
         CancellationToken cancellationToken = default)
     {
@@ -131,7 +131,7 @@ public sealed class ReviewsService
         int? rating,
         string text,
         int? hoursPlayed,
-        Guid? platformId,
+        string? platformId,
         string? clientIp,
         CancellationToken cancellationToken = default)
     {
@@ -143,7 +143,6 @@ public sealed class ReviewsService
             await IncrementImportQuotaAsync(userId, cancellationToken);
         }
 
-        var resolvedPlatform = await ResolvePlatformRefAsync(imported.GameId, platformId, cancellationToken);
         return await CreateInternalAsync(
             imported.Slug,
             imported.GameId,
@@ -152,7 +151,7 @@ public sealed class ReviewsService
             rating,
             text,
             hoursPlayed,
-            resolvedPlatform,
+            platformId,
             clientIp,
             cancellationToken);
     }
@@ -164,7 +163,7 @@ public sealed class ReviewsService
         int? rating,
         string? text,
         int? hoursPlayed,
-        Guid? platformId,
+        string? platformId,
         CancellationToken cancellationToken = default)
     {
         await _auth.AssertEmailVerifiedAsync(userId, cancellationToken);
@@ -190,8 +189,7 @@ public sealed class ReviewsService
 
         if (platformId is not null)
         {
-            await ResolvePlatformRefAsync(review.GameId, platformId, cancellationToken);
-            review.PlatformId = platformId;
+            review.PlatformId = await ResolvePlatformRefAsync(review.GameId, platformId, cancellationToken);
         }
 
         var fingerprint = HashUtil.ReviewFingerprint(nextText);
@@ -443,7 +441,7 @@ public sealed class ReviewsService
         int? rating,
         string text,
         int? hoursPlayed,
-        Guid? platformId,
+        string? platformRef,
         string? clientIp,
         CancellationToken cancellationToken)
     {
@@ -458,7 +456,7 @@ public sealed class ReviewsService
             throw new ConflictException(ErrorCodes.ReviewAlreadyExists, "You already have a review for this game");
         }
 
-        platformId = await ResolvePlatformRefAsync(gameId.Value, platformId, cancellationToken);
+        var platformId = await ResolvePlatformRefAsync(gameId.Value, platformRef, cancellationToken);
         AssertPayload(recommended, text, rating, hoursPlayed);
 
         var author = await _db.Users.FirstAsync(u => u.Id == userId, cancellationToken);
@@ -578,35 +576,56 @@ public sealed class ReviewsService
         }).ToList();
     }
 
-    private async Task<Guid?> ResolvePlatformRefAsync(Guid gameId, Guid? platformRef, CancellationToken cancellationToken)
+    /// <summary>
+    /// Accepts a platform Guid, slug, or abbreviation. Catalog platforms that are
+    /// not yet linked to the game are attached automatically (needed for first
+    /// reviews on IGDB imports, which do not seed game_platforms).
+    /// </summary>
+    private async Task<Guid?> ResolvePlatformRefAsync(Guid gameId, string? platformRef, CancellationToken cancellationToken)
     {
-        if (platformRef is null)
+        if (string.IsNullOrWhiteSpace(platformRef))
         {
             return null;
         }
 
-        var link = await _db.GamePlatforms.AsNoTracking()
-            .Include(gp => gp.Platform)
-            .FirstOrDefaultAsync(
-                gp => gp.GameId == gameId && (gp.PlatformId == platformRef || gp.Platform.Slug == platformRef.ToString()),
-                cancellationToken);
+        var key = platformRef.Trim();
+        PlatformEntity? platform = null;
 
-        if (link is null)
+        if (Guid.TryParse(key, out var platformId))
         {
-            var bySlug = await _db.GamePlatforms.AsNoTracking()
-                .Include(gp => gp.Platform)
-                .FirstOrDefaultAsync(gp => gp.GameId == gameId && gp.Platform.Slug == platformRef.ToString(), cancellationToken);
-            link = bySlug;
+            platform = await _db.Platforms.FirstOrDefaultAsync(p => p.Id == platformId, cancellationToken);
         }
 
-        if (link is null)
+        if (platform is null)
+        {
+            var normalised = key.ToLowerInvariant();
+            platform = await _db.Platforms.FirstOrDefaultAsync(
+                p => p.Slug == normalised
+                    || p.Abbreviation.ToLower() == normalised
+                    || p.Name.ToLower() == normalised,
+                cancellationToken);
+        }
+
+        if (platform is null)
         {
             throw new BadRequestException(
                 ErrorCodes.PlatformNotAvailableForGame,
                 "That platform is not listed for this game");
         }
 
-        return link.PlatformId;
+        var linked = await _db.GamePlatforms.AnyAsync(
+            gp => gp.GameId == gameId && gp.PlatformId == platform.Id,
+            cancellationToken);
+        if (!linked)
+        {
+            _db.GamePlatforms.Add(new GamePlatformEntity
+            {
+                GameId = gameId,
+                PlatformId = platform.Id,
+            });
+        }
+
+        return platform.Id;
     }
 
     private static void AssertPayload(bool recommended, string text, int? rating, int? hoursPlayed)

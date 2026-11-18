@@ -67,7 +67,8 @@ export function ReviewForm({
       text: values.text,
       rating: values.rating ? Number(values.rating) : null,
       hoursPlayed: values.hoursPlayed ? Number(values.hoursPlayed) : null,
-      platformId: values.platformId || null,
+      // Empty select must be null (ASP.NET rejects ""). Slug or Guid both work.
+      platformId: values.platformId.trim() || null,
     };
     try {
       const review = existing

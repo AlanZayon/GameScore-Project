@@ -44,7 +44,7 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
             body.Rating,
             body.Text,
             body.HoursPlayed,
-            body.PlatformId,
+            NormalizePlatformId(body.PlatformId),
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             cancellationToken);
         return Created(string.Empty, result);
@@ -66,7 +66,7 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
             body.Rating,
             body.Text,
             body.HoursPlayed,
-            body.PlatformId,
+            NormalizePlatformId(body.PlatformId),
             HttpContext.Connection.RemoteIpAddress?.ToString(),
             cancellationToken);
         return Created(string.Empty, result);
@@ -88,9 +88,12 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
             body.Rating,
             body.Text,
             body.HoursPlayed,
-            body.PlatformId,
+            NormalizePlatformId(body.PlatformId),
             cancellationToken);
     }
+
+    private static string? NormalizePlatformId(string? platformId) =>
+        string.IsNullOrWhiteSpace(platformId) ? null : platformId.Trim();
 
     [HttpDelete("reviews/{id:guid}")]
     [Authorize]
@@ -129,8 +132,8 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
     }
 }
 
-public sealed record CreateReviewRequest(bool Recommended, int? Rating, string Text, int? HoursPlayed, Guid? PlatformId);
-public sealed record UpdateReviewRequest(bool? Recommended, int? Rating, string? Text, int? HoursPlayed, Guid? PlatformId);
+public sealed record CreateReviewRequest(bool Recommended, int? Rating, string Text, int? HoursPlayed, string? PlatformId);
+public sealed record UpdateReviewRequest(bool? Recommended, int? Rating, string? Text, int? HoursPlayed, string? PlatformId);
 public sealed record DeleteReviewRequest(string? Reason);
 public sealed record VoteReviewRequest(bool Useful);
 public sealed record ReportReviewRequest(string Reason, string? Details);

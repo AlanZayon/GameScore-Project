@@ -25,26 +25,64 @@ const EMPTY_SCORE: GameScoreDto = {
   ratingCount: 0,
 };
 
-function previewPlatforms(preview: ExternalGamePreviewDto): PlatformDto[] {
-  return preview.platforms.map((platform) => {
+/** Prefer catalog Guids; fall back to slug/abbreviation for API resolution. */
+function previewPlatforms(
+  preview: ExternalGamePreviewDto,
+  catalog: PlatformDto[],
+): PlatformDto[] {
+  const matched: PlatformDto[] = [];
+  const seen = new Set<string>();
+
+  for (const platform of preview.platforms) {
+    const abbr = (platform.abbreviation || '').trim().toLowerCase();
+    const name = platform.name.trim().toLowerCase();
     const slug = slugify(platform.abbreviation || platform.name) || slugify(platform.name);
-    return {
-      id: slug,
-      slug,
-      name: platform.name,
-      abbreviation: platform.abbreviation,
-      family: 'OTHER',
-    };
-  });
+
+    const catalogMatch = catalog.find((item) => {
+      const itemAbbr = item.abbreviation.trim().toLowerCase();
+      const itemName = item.name.trim().toLowerCase();
+      return (
+        (abbr && itemAbbr === abbr) ||
+        itemName === name ||
+        item.slug === slug ||
+        (abbr && item.slug === abbr)
+      );
+    });
+
+    const resolved =
+      catalogMatch ??
+      ({
+        id: slug,
+        slug,
+        name: platform.name,
+        abbreviation: platform.abbreviation || slug.toUpperCase(),
+        family: 'OTHER' as const,
+      } satisfies PlatformDto);
+
+    if (seen.has(resolved.id)) continue;
+    seen.add(resolved.id);
+    matched.push(resolved);
+  }
+
+  return matched;
 }
 
-export function ExternalGameClient({ preview }: { preview: ExternalGamePreviewDto }) {
+export function ExternalGameClient({
+  preview,
+  catalogPlatforms,
+}: {
+  preview: ExternalGamePreviewDto;
+  catalogPlatforms: PlatformDto[];
+}) {
   const t = useTranslations('game');
   const reviewsT = useTranslations('reviews');
   const { user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const platforms = useMemo(() => previewPlatforms(preview), [preview]);
+  const platforms = useMemo(
+    () => previewPlatforms(preview, catalogPlatforms),
+    [preview, catalogPlatforms],
+  );
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_280px]">

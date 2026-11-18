@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { request as httpRequest, type IncomingMessage, type RequestOptions } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { NextRequest, NextResponse } from 'next/server';
@@ -80,27 +79,10 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
     response.headers.append('set-cookie', toFirstPartyCookie(raw));
   }
 
-  const inboundRefresh = readCookieValue(request.headers.get('cookie'), 'gs_refresh_token');
-  const outboundPair = rawCookies[0]?.split(';', 1)[0] ?? '';
-  const outboundEq = outboundPair.indexOf('=');
-  const outboundValue = outboundEq > 0 ? outboundPair.slice(outboundEq + 1) : '';
-
-  response.headers.set('x-gs-proxy', '3');
+  response.headers.set('x-gs-proxy', '1');
   response.headers.set('x-gs-proxy-cookies', String(rawCookies.length));
-  response.headers.set('x-gs-proxy-refresh-in', inboundRefresh ? String(inboundRefresh.length) : '0');
-  response.headers.set('x-gs-proxy-refresh-out', String(outboundValue.length));
-  if (outboundValue) {
-    response.headers.set('x-gs-proxy-fp-out', fingerprint(outboundValue));
-  }
-  if (inboundRefresh) {
-    response.headers.set('x-gs-proxy-fp-in', fingerprint(inboundRefresh));
-  }
 
   return response;
-}
-
-function fingerprint(value: string): string {
-  return createHash('sha256').update(value).digest('hex').slice(0, 12);
 }
 
 function nodeRequest(
@@ -162,18 +144,6 @@ function toFirstPartyCookie(setCookie: string): string {
   });
 
   return [pair, 'Path=/', 'HttpOnly', 'Secure', 'SameSite=Lax', ...kept].join('; ');
-}
-
-function readCookieValue(header: string | null, name: string): string | null {
-  if (!header) return null;
-  for (const part of header.split(';')) {
-    const trimmed = part.trim();
-    const eq = trimmed.indexOf('=');
-    if (eq <= 0) continue;
-    if (trimmed.slice(0, eq) !== name) continue;
-    return trimmed.slice(eq + 1);
-  }
-  return null;
 }
 
 type RouteContext = { params: Promise<{ path: string[] }> };

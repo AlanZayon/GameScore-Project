@@ -18,6 +18,12 @@ public sealed class AppConfig
     public required RankingConfig Ranking { get; init; }
     public required AntiSpamConfig AntiSpam { get; init; }
     public SmtpConfig? Smtp { get; init; }
+    /// <summary>
+    /// Production refresh cookie SameSite. Use <c>None</c> for cross-site API hosts
+    /// (e.g. onrender.com) and <c>Lax</c> when the browser talks to a same-site proxy
+    /// or <c>api.</c> subdomain under the web domain.
+    /// </summary>
+    public string CookieSameSite { get; init; } = "Lax";
 }
 
 public sealed class JwtConfig

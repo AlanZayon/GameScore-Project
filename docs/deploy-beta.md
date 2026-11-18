@@ -62,11 +62,24 @@ Secrets that contain `dev-only-` or `change-me` are rejected at startup.
 
 Import the **repo root** (not `apps/web`). [`vercel.json`](../vercel.json) runs the pnpm workspace build for `@gamescore/web`.
 
+### Session cookies (required on custom domains)
+
+Browsers treat `gamesscore.com.br` → `*.onrender.com` as **third-party** cookies, so login works until refresh and then the session vanishes. Proxy the browser API through the same origin:
+
 | Variable | Value |
 |----------|--------|
-| `NEXT_PUBLIC_API_URL` | `https://your-api.onrender.com` |
-| `NEXT_PUBLIC_SITE_URL` | `https://your-app.vercel.app` |
-| `API_INTERNAL_URL` | same as API URL (SSR fetch) |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.gamesscore.com.br` |
+| `NEXT_PUBLIC_API_URL` | `https://www.gamesscore.com.br/api` |
+| `API_REWRITE_TARGET` | `https://gamescore-project.onrender.com` (no trailing slash) |
+| `API_INTERNAL_URL` | `https://gamescore-project.onrender.com` (SSR talks to Render directly) |
+
+On Render, set:
+
+| Variable | Value |
+|----------|--------|
+| `CORS_ORIGINS` | `https://www.gamesscore.com.br,https://gamesscore.com.br` |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.gamesscore.com.br` |
+| `COOKIE_SAMESITE` | `Lax` (first-party via `/api` proxy) |
 
 Rebuild after changing `NEXT_PUBLIC_*` — CSP `connect-src` and the client bundle bake them in at build time.
 
@@ -78,7 +91,7 @@ Preview deployments: each `*.vercel.app` URL must appear in Render `CORS_ORIGINS
 
 - [ ] Register → verification email arrives → confirm → write a review
 - [ ] Unverified account gets `EMAIL_NOT_VERIFIED` on review/vote
-- [ ] Refresh after reload still works (cookie cross-site)
+- [ ] Refresh after reload still works (same-origin `/api` cookie)
 - [ ] Login / forgot-password rate-limit after repeated hits (429)
 - [ ] Swagger not public (`/api/docs`)
 - [ ] Admin list users: moderators see masked emails; admins see full

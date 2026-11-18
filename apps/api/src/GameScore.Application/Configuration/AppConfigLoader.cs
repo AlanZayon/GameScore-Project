@@ -105,6 +105,9 @@ public static class AppConfigLoader
             RedisUrl = env.GetValueOrDefault("REDIS_URL")?.Trim(),
             WebUrl = env.GetValueOrDefault("NEXT_PUBLIC_SITE_URL")?.Trim() ?? "http://localhost:3000",
             EnableSwagger = !isProduction || env.GetValueOrDefault("ENABLE_SWAGGER") == "true",
+            // Cross-site API (onrender.com) needs None; same-origin /api proxy or api. subdomain can use Lax.
+            CookieSameSite = env.GetValueOrDefault("COOKIE_SAMESITE")?.Trim()
+                ?? (isProduction ? "None" : "Lax"),
             Jwt = new JwtConfig
             {
                 AccessSecret = accessSecret.Value!,

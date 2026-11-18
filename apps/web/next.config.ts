@@ -5,6 +5,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const isProduction = process.env.NODE_ENV === 'production';
+/** Upstream API for same-origin /api rewrite (keeps refresh cookies first-party). */
+const apiRewriteTarget = (process.env.API_REWRITE_TARGET ?? '').replace(/\/$/, '');
 
 function contentSecurityPolicy(): string {
   return [
@@ -51,6 +53,18 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
+  },
+  async rewrites() {
+    // Browser → https://www.gamesscore.com.br/api/... → Render, so Set-Cookie is first-party.
+    if (!apiRewriteTarget) {
+      return [];
+    }
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiRewriteTarget}/:path*`,
+      },
+    ];
   },
 };
 

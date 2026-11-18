@@ -122,7 +122,11 @@ public sealed class UserStatisticsService
         var start = RangeStart(range);
 
         var allReviews = await _db.Reviews.AsNoTracking()
-            .Where(r => r.UserId == user.Id && r.DeletedAt == null && r.Status == DbReviewStatus.PUBLISHED)
+            .Where(r =>
+                r.UserId == user.Id
+                && r.DeletedAt == null
+                && r.Status == DbReviewStatus.PUBLISHED
+                && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED)
             .Include(r => r.Platform)
             .Include(r => r.Game)
             .ThenInclude(g => g.Genres)
@@ -137,7 +141,10 @@ public sealed class UserStatisticsService
             .ToListAsync(cancellationToken);
 
         var siteAgg = await _db.Reviews.AsNoTracking()
-            .Where(r => r.DeletedAt == null && r.Status == DbReviewStatus.PUBLISHED)
+            .Where(r =>
+                r.DeletedAt == null
+                && r.Status == DbReviewStatus.PUBLISHED
+                && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED)
             .GroupBy(r => r.Recommended)
             .Select(g => new { Recommended = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);

@@ -71,6 +71,10 @@ All use password `Password123!`:
 - `moderator@gamescore.dev`
 - `player1@gamescore.dev` …
 
+## Beta hosting
+
+For a public sample without a custom domain (Vercel web + Render API + Neon Postgres), see [deploy-beta.md](./deploy-beta.md). That guide covers cross-origin refresh cookies, CORS, JWT secrets, SMTP, and the smoke checklist.
+
 ## Acceptance checklist
 
 Walk this list against a running `pnpm dev` after `pnpm db:seed`:
@@ -81,7 +85,7 @@ Walk this list against a running `pnpm dev` after `pnpm db:seed`:
 4. Game page at `/games/<slug>` is SSR, has canonical + hreflang, OpenGraph tags, score panel, platform breakdown and reviews.
 5. Portuguese URLs have no locale prefix (`/games/elden-ring`); English is `/en/games/elden-ring`.
 6. Register, login, refresh (reload the page still authenticated) and logout work. Access token is not in localStorage. Registration requires accepting terms; a confirmation email appears in Mailpit.
-7. A signed-in user can create, edit and soft-delete a review; cannot review the same game twice.
+7. A signed-in user with a **verified email** can create, edit and soft-delete a review; cannot review the same game twice. Unverified accounts get `EMAIL_NOT_VERIFIED`.
 8. Helpfulness votes work; self-vote is rejected. Reports can be submitted.
 9. A 10/10 game does not outrank a 9500/10000 game on Top Rated (Wilson `confidenceScore`, minimum 50 reviews).
 10. Rankings tabs load: top rated, trending, new releases, popular.

@@ -28,7 +28,11 @@ public sealed class UsersService
     {
         var user = await FindPublicUserAsync(username, cancellationToken);
         var published = _db.Reviews.AsNoTracking()
-            .Where(r => r.UserId == user.Id && r.DeletedAt == null && r.Status == DbReviewStatus.PUBLISHED);
+            .Where(r =>
+                r.UserId == user.Id
+                && r.DeletedAt == null
+                && r.Status == DbReviewStatus.PUBLISHED
+                && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED);
 
         var agg = await published
             .GroupBy(r => r.Recommended)
@@ -50,7 +54,6 @@ public sealed class UsersService
             displayName = user.DisplayName,
             avatarUrl = user.AvatarUrl,
             reputationScore = user.ReputationScore,
-            role = user.Role.ToString(),
             deleted = false,
             bio = user.Bio,
             createdAt = user.CreatedAt.ToString("O"),

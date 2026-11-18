@@ -168,8 +168,11 @@ public sealed class AdminController(AdminService admin) : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int limit = 50,
         [FromQuery] string? q = null,
-        CancellationToken cancellationToken = default) =>
-        admin.ListUsersAsync(page, limit, q, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var actor = User.GetAuthUser() ?? throw new Application.Errors.UnauthorizedException();
+        return admin.ListUsersAsync(actor, page, limit, q, cancellationToken);
+    }
 
     [HttpPatch("users/{id:guid}")]
     public Task<object> UpdateUser(

@@ -24,6 +24,8 @@ public static class ErrorCodes
     public const string InvalidVerificationToken = "INVALID_VERIFICATION_TOKEN";
     public const string VerificationTokenExpired = "VERIFICATION_TOKEN_EXPIRED";
     public const string EmailAlreadyVerified = "EMAIL_ALREADY_VERIFIED";
+    public const string EmailNotVerified = "EMAIL_NOT_VERIFIED";
+    public const string ImportRateLimitExceeded = "IMPORT_RATE_LIMIT_EXCEEDED";
 
     public const string UserNotFound = "USER_NOT_FOUND";
     public const string GameNotFound = "GAME_NOT_FOUND";

@@ -1,13 +1,16 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AspNetCoreRateLimit;
 using GameScore.Api;
 using GameScore.Api.Authorization;
 using GameScore.Api.Middleware;
+using GameScore.Api.RateLimiting;
 using GameScore.Application.Configuration;
 using GameScore.Infrastructure;
 using GameScore.Infrastructure.Jobs;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 
 // Load monorepo .env before reading configuration (same vars as Nest).
@@ -42,9 +45,18 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 builder.Host.UseSerilog();
 builder.WebHost.UseUrls($"http://0.0.0.0:{config.Port}");
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Render (and similar PaaS) terminate TLS at the edge; trust forwarded headers from the proxy.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, JsonAuthorizationMiddlewareResultHandler>();
 builder.Services.AddGameScoreInfrastructure(config);
 builder.Services.AddGameScoreAuth(config);
+builder.Services.AddGameScoreRateLimiting();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -74,8 +86,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseMiddleware<RequestIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseIpRateLimiting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

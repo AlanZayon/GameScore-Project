@@ -12,7 +12,6 @@ public static class UserMapper
             displayName = user.DisplayName,
             avatarUrl = user.AvatarUrl,
             reputationScore = user.ReputationScore,
-            role = user.Role.ToString(),
             deleted = user.DeletedAt is not null,
         };
 

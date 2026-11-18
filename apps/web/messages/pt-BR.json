@@ -160,6 +160,8 @@
     "reportError": "Não foi possível denunciar.",
     "voteError": "Não foi possível votar.",
     "writeTitle": "Escrever avaliação",
+    "verifyRequired": "Confirme seu e-mail em Configurações antes de publicar uma avaliação.",
+    "verifySettingsCta": "Abrir configurações",
     "textLabel": "Texto",
     "textHint": "Mínimo de {min} caracteres.",
     "textRequired": "Escreva sua avaliação.",
@@ -550,7 +552,9 @@
     "INVALID_AVATAR_URL": "Use um endereço https válido para o avatar.",
     "INVALID_VERIFICATION_TOKEN": "Este link de confirmação é inválido.",
     "VERIFICATION_TOKEN_EXPIRED": "Este link de confirmação expirou. Peça outro.",
-    "EMAIL_ALREADY_VERIFIED": "Este e-mail já está confirmado."
+    "EMAIL_ALREADY_VERIFIED": "Este e-mail já está confirmado.",
+    "EMAIL_NOT_VERIFIED": "Confirme seu e-mail antes de avaliar ou votar.",
+    "IMPORT_RATE_LIMIT_EXCEEDED": "Limite diário de importação de jogos atingido. Tente amanhã."
   },
   "footer": {
     "builtWith": "GameScore é um projeto de demonstração de avaliação estatística de jogos.",

@@ -49,6 +49,8 @@ public sealed class AntiSpamConfig
     public int MaxReviewsPerDay { get; init; } = 20;
     public int MinimumTextLength { get; init; } = 20;
     public int MaxAccountsPerIp { get; init; } = 5;
+    /// <summary>Max IGDB/external game imports per authenticated user per UTC day.</summary>
+    public int MaxImportsPerUserPerDay { get; init; } = 10;
 }
 
 public sealed class SmtpConfig

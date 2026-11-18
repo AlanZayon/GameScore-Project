@@ -51,7 +51,11 @@ public sealed class ReviewDataAccess(GameScoreDbContext db)
         CancellationToken cancellationToken = default)
     {
         var query = db.Reviews.AsNoTracking()
-            .Where(r => r.GameId == gameId && r.DeletedAt == null && r.Status == DbReviewStatus.PUBLISHED);
+            .Where(r =>
+                r.GameId == gameId
+                && r.DeletedAt == null
+                && r.Status == DbReviewStatus.PUBLISHED
+                && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED);
 
         if (recommendation == "POSITIVE")
         {
@@ -155,7 +159,11 @@ public sealed class ReviewDataAccess(GameScoreDbContext db)
         CancellationToken cancellationToken = default)
     {
         var query = db.Reviews.AsNoTracking()
-            .Where(r => r.UserId == userId && r.DeletedAt == null && r.Status == DbReviewStatus.PUBLISHED);
+            .Where(r =>
+                r.UserId == userId
+                && r.DeletedAt == null
+                && r.Status == DbReviewStatus.PUBLISHED
+                && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED);
 
         var decoded = cursor is null ? null : Pagination.DecodeCursor<RecentCursor>(cursor);
         if (decoded is not null)

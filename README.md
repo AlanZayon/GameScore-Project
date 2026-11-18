@@ -87,6 +87,7 @@ docs/                  Architecture, database, API, scoring and development guid
 - [docs/scoring.md](docs/scoring.md) — the maths, worked examples, ranking rules
 - [docs/api.md](docs/api.md) — endpoints and error codes
 - [docs/development.md](docs/development.md) — environment variables, IGDB setup, testing
+- [docs/deploy-beta.md](docs/deploy-beta.md) — Vercel + Render + Neon public beta checklist
 
 ## Licence
 

@@ -7,7 +7,8 @@ export interface UserSummary {
   displayName: string | null;
   avatarUrl: string | null;
   reputationScore: number;
-  role: UserRole;
+  /** Present on authenticated/admin payloads; omitted from public profiles. */
+  role?: UserRole;
   /** True after the account has been anonymised. Reviews may still exist. */
   deleted: boolean;
 }
@@ -121,6 +122,7 @@ export interface ReputationEventDto {
 
 /** The authenticated user's own account. Includes private fields. */
 export interface AuthenticatedUser extends UserSummary {
+  role: UserRole;
   email: string;
   status: UserStatus;
   createdAt: string;

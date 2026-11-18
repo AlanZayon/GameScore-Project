@@ -160,6 +160,8 @@
     "reportError": "Could not send the report.",
     "voteError": "Could not record your vote.",
     "writeTitle": "Write a review",
+    "verifyRequired": "Confirm your email in Settings before publishing a review.",
+    "verifySettingsCta": "Open settings",
     "textLabel": "Review",
     "textHint": "At least {min} characters.",
     "textRequired": "Please write your review.",
@@ -550,7 +552,9 @@
     "INVALID_AVATAR_URL": "Use a valid https address for the avatar.",
     "INVALID_VERIFICATION_TOKEN": "This confirmation link is not valid.",
     "VERIFICATION_TOKEN_EXPIRED": "This confirmation link has expired. Request a new one.",
-    "EMAIL_ALREADY_VERIFIED": "This email is already confirmed."
+    "EMAIL_ALREADY_VERIFIED": "This email is already confirmed.",
+    "EMAIL_NOT_VERIFIED": "Confirm your email before posting reviews or voting.",
+    "IMPORT_RATE_LIMIT_EXCEEDED": "Daily game import limit reached. Try again tomorrow."
   },
   "footer": {
     "builtWith": "GameScore is a demonstration of statistically honest game ratings.",

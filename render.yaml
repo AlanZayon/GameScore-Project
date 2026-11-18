@@ -1,0 +1,60 @@
+# Render Blueprint — GameScore API
+# https://render.com/docs/blueprint-spec
+#
+# Connect this repo in the Render dashboard (New → Blueprint) or:
+#   render blueprints apply
+#
+# After the first deploy, copy the service URL into Vercel as NEXT_PUBLIC_API_URL
+# and API_INTERNAL_URL, then set CORS_ORIGINS / NEXT_PUBLIC_SITE_URL to the Vercel URL.
+
+services:
+  - type: web
+    name: gamescore-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./infrastructure/docker/api.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: API_PORT
+        value: '3001'
+      - key: LOG_LEVEL
+        value: info
+      - key: ENABLE_SWAGGER
+        value: 'false'
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_ACCESS_TOKEN_TTL
+        value: '900'
+      - key: JWT_REFRESH_TOKEN_TTL
+        value: '2592000'
+      - key: CORS_ORIGINS
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_SECURE
+        value: 'true'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: IGDB_CLIENT_ID
+        sync: false
+      - key: IGDB_CLIENT_SECRET
+        sync: false

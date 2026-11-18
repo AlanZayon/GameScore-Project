@@ -28,5 +28,5 @@ public sealed record AuthenticatedUserDto(
     int ReputationScore,
     string? AvatarUrl,
     string? Bio,
-    DateTime? EmailVerifiedAt,
+    bool EmailVerified,
     DateTime CreatedAt);

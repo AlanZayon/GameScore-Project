@@ -340,10 +340,41 @@ public sealed class AdminService
             throw new NotFoundException(ErrorCodes.ReviewNotFound, "Review not found");
         }
 
+        var previous = bundle.Review.ModerationStatus;
         bundle.Review.ModerationStatus = moderationStatus;
         bundle.Review.ModerationNotes = notes;
         bundle.Review.UpdatedAt = DateTime.UtcNow;
+
+        await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        if (previous == DbReviewModerationStatus.MODERATION_REQUIRED
+            && moderationStatus == DbReviewModerationStatus.NORMAL
+            && bundle.Review.DeletedAt is null
+            && bundle.Review.Status == DbReviewStatus.PUBLISHED)
+        {
+            var alreadyAwarded = await _db.ReputationEvents.AnyAsync(
+                e => e.UserId == bundle.Review.UserId
+                    && e.SourceType == "review"
+                    && e.SourceId == bundle.Review.Id
+                    && e.Reason == DbReputationReason.REVIEW_PUBLISHED,
+                cancellationToken);
+            if (!alreadyAwarded)
+            {
+                _reputation.ApplyToUser(bundle.Author, "REVIEW_PUBLISHED", "review", bundle.Review.Id);
+            }
+
+            await _scores.BumpDailyActivityAsync(
+                bundle.Review.GameId,
+                bundle.Review.Recommended,
+                bundle.Review.CreatedAt,
+                1,
+                cancellationToken);
+        }
+
+        await _scores.RecalculateInsideAsync(bundle.Review.GameId, true, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+
         await _audit.RecordAsync(
             actor.Id,
             DbAuditAction.ADMIN_UPDATED_REVIEW_MODERATION,
@@ -351,6 +382,10 @@ public sealed class AdminService
             id.ToString(),
             new { moderationStatus = moderationStatus.ToString() },
             cancellationToken);
+
+        _jobs.EnqueueRecalculateGameScore(bundle.Review.GameId);
+        _jobs.EnqueueInvalidateRankings();
+        await _reputation.InvalidateUserStatsAsync(bundle.Review.UserId, cancellationToken);
 
         return ReviewMapper.ToDto(bundle.Review, bundle.Author, bundle.Game, bundle.Platform, null, null, false);
     }
@@ -549,10 +584,16 @@ public sealed class AdminService
         _jobs.EnqueueInvalidateRankings();
     }
 
-    public async Task<object> ListUsersAsync(int? page, int? limit, string? q, CancellationToken cancellationToken = default)
+    public async Task<object> ListUsersAsync(
+        AuthUser actor,
+        int? page,
+        int? limit,
+        string? q,
+        CancellationToken cancellationToken = default)
     {
         var safePage = Pagination.ClampPage(page);
         var safeLimit = Pagination.ClampLimit(limit, 50);
+        var revealEmail = actor.Role == UserRoles.Admin;
         var query = _db.Users.AsNoTracking().Where(u => u.DeletedAt == null);
         if (!string.IsNullOrWhiteSpace(q))
         {
@@ -581,7 +622,7 @@ public sealed class AdminService
                 reputationScore = user.ReputationScore,
                 role = user.Role.ToString(),
                 deleted = false,
-                email = user.Email,
+                email = revealEmail ? user.Email : MaskEmail(user.Email),
                 status = user.Status.ToString(),
                 suspendedUntil = user.SuspendedUntil?.ToString("O"),
                 createdAt = user.CreatedAt.ToString("O"),
@@ -591,6 +632,20 @@ public sealed class AdminService
         }
 
         return Pagination.Paginated(items, total, safePage, safeLimit);
+    }
+
+    private static string MaskEmail(string email)
+    {
+        var at = email.IndexOf('@');
+        if (at <= 0)
+        {
+            return "***";
+        }
+
+        var local = email[..at];
+        var domain = email[(at + 1)..];
+        var visible = local.Length == 0 ? "*" : local[0].ToString();
+        return $"{visible}***@{domain}";
     }
 
     public async Task<object> UpdateUserAsync(

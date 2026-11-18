@@ -40,7 +40,6 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
         var result = await reviews.CreateAsync(
             slug,
             user.Id,
-            user.ReputationScore,
             body.Recommended,
             body.Rating,
             body.Text,
@@ -63,7 +62,6 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
         var result = await reviews.CreateForExternalAsync(
             externalId,
             user.Id,
-            user.ReputationScore,
             body.Recommended,
             body.Rating,
             body.Text,
@@ -86,7 +84,6 @@ public sealed class ReviewsController(ReviewsService reviews) : ControllerBase
         return reviews.UpdateAsync(
             id,
             user.Id,
-            user.ReputationScore,
             body.Recommended,
             body.Rating,
             body.Text,

@@ -9,6 +9,7 @@ import { Input, Label, Textarea } from '@/components/ui/input';
 import { apiFetch, ApiError } from '@/lib/api';
 import { useAuth } from '@/components/providers/auth-provider';
 import { useToast } from '@/components/providers/toast-provider';
+import { Link } from '@/i18n/navigation';
 
 interface FormValues {
   recommended: 'yes' | 'no';
@@ -38,7 +39,7 @@ export function ReviewForm({
 }) {
   const t = useTranslations('reviews');
   const errors = useTranslations('errors');
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const toast = useToast();
   const form = useForm<FormValues>({
     defaultValues: {
@@ -50,9 +51,15 @@ export function ReviewForm({
     },
   });
 
+  const needsEmailVerification = Boolean(user && !user.emailVerified);
+
   async function onSubmit(values: FormValues) {
     if (!accessToken) {
       toast.push(errors('UNAUTHORIZED'), 'error');
+      return;
+    }
+    if (needsEmailVerification) {
+      toast.push(errors('EMAIL_NOT_VERIFIED'), 'error');
       return;
     }
     const payload: CreateReviewRequest | UpdateReviewRequest = {
@@ -90,6 +97,14 @@ export function ReviewForm({
       className="space-y-4 rounded-card border border-border-subtle bg-surface p-4"
     >
       <h3 className="font-semibold">{existing ? t('editTitle') : t('writeTitle')}</h3>
+      {needsEmailVerification ? (
+        <p className="rounded-md border border-border-subtle bg-surface-raised px-3 py-2 text-sm text-content-muted">
+          {t('verifyRequired')}{' '}
+          <Link href="/settings" className="font-medium text-brand underline-offset-2 hover:underline">
+            {t('verifySettingsCta')}
+          </Link>
+        </p>
+      ) : null}
       <div className="flex gap-3">
         <label className="flex items-center gap-2 text-sm">
           <input type="radio" value="yes" {...form.register('recommended')} />
@@ -145,7 +160,7 @@ export function ReviewForm({
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={form.formState.isSubmitting || needsEmailVerification}>
           {existing ? t('saveEdit') : t('submit')}
         </Button>
         {onCancel ? (

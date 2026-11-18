@@ -42,9 +42,17 @@ public sealed class AuthService
         string username,
         string password,
         string? displayName,
+        bool acceptedTerms,
         string? userAgent,
         CancellationToken cancellationToken = default)
     {
+        if (!acceptedTerms)
+        {
+            throw new BadRequestException(ErrorCodes.ValidationFailed, "You must accept the terms of service");
+        }
+
+        PasswordRules.EnsureValid(password);
+
         email = email.Trim().ToLowerInvariant();
         username = username.Trim().ToLowerInvariant();
 
@@ -156,6 +164,8 @@ public sealed class AuthService
         string newPassword,
         CancellationToken cancellationToken = default)
     {
+        PasswordRules.EnsureValid(newPassword);
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user is null)
         {
@@ -211,6 +221,8 @@ public sealed class AuthService
 
     public async Task ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default)
     {
+        PasswordRules.EnsureValid(newPassword);
+
         var stored = await _db.PasswordResetTokens
             .FirstOrDefaultAsync(t => t.TokenHash == HashUtil.Sha256Hex(token), cancellationToken);
         if (stored is null || stored.UsedAt is not null)
@@ -328,6 +340,21 @@ public sealed class AuthService
             refresh);
     }
 
+    public async Task AssertEmailVerifiedAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var verified = await _db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.EmailVerifiedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (verified is null)
+        {
+            throw new ForbiddenException(
+                ErrorCodes.EmailNotVerified,
+                "Confirm your email before performing this action");
+        }
+    }
+
     private async Task AssertUsableAsync(UserEntity user, CancellationToken cancellationToken)
     {
         if (user.DeletedAt is not null)
@@ -381,6 +408,6 @@ internal static class UserMapper
             user.ReputationScore,
             user.AvatarUrl,
             user.Bio,
-            user.EmailVerifiedAt,
+            user.EmailVerifiedAt is not null,
             user.CreatedAt);
 }

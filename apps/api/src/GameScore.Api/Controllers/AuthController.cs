@@ -1,3 +1,4 @@
+using GameScore.Api.Auth;
 using GameScore.Api.Authorization;
 using GameScore.Application.Auth;
 using GameScore.Application.Configuration;
@@ -20,9 +21,10 @@ public sealed class AuthController(AuthService auth, IOptions<AppConfig> config)
             body.Username,
             body.Password,
             body.DisplayName,
+            body.AcceptedTerms,
             Request.Headers.UserAgent,
             cancellationToken);
-        SetRefreshCookie(result.RefreshToken);
+        RefreshCookie.Set(Response, config.Value, result.RefreshToken);
         return Created(string.Empty, result.Session);
     }
 
@@ -30,7 +32,7 @@ public sealed class AuthController(AuthService auth, IOptions<AppConfig> config)
     public async Task<ActionResult<AuthSessionResponse>> Login([FromBody] LoginRequest body, CancellationToken cancellationToken)
     {
         var result = await auth.LoginAsync(body.Identifier, body.Password, Request.Headers.UserAgent, cancellationToken);
-        SetRefreshCookie(result.RefreshToken);
+        RefreshCookie.Set(Response, config.Value, result.RefreshToken);
         return Ok(result.Session);
     }
 
@@ -47,12 +49,12 @@ public sealed class AuthController(AuthService auth, IOptions<AppConfig> config)
         try
         {
             var result = await auth.RefreshAsync(token, Request.Headers.UserAgent, cancellationToken);
-            SetRefreshCookie(result.RefreshToken);
+            RefreshCookie.Set(Response, config.Value, result.RefreshToken);
             return Ok(result.Session);
         }
         catch (Application.Errors.UnauthorizedException)
         {
-            ClearRefreshCookie();
+            RefreshCookie.Clear(Response, config.Value);
             throw;
         }
     }
@@ -63,7 +65,7 @@ public sealed class AuthController(AuthService auth, IOptions<AppConfig> config)
     {
         Request.Cookies.TryGetValue(AuthConstants.RefreshTokenCookie, out var token);
         await auth.LogoutAsync(token, cancellationToken);
-        ClearRefreshCookie();
+        RefreshCookie.Clear(Response, config.Value);
         return NoContent();
     }
 
@@ -117,34 +119,6 @@ public sealed class AuthController(AuthService auth, IOptions<AppConfig> config)
     {
         await auth.ResendVerificationAsync(body.Email, cancellationToken);
         return NoContent();
-    }
-
-    private void SetRefreshCookie(IssuedRefreshToken refresh)
-    {
-        Response.Cookies.Append(
-            AuthConstants.RefreshTokenCookie,
-            refresh.Token,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                SameSite = SameSiteMode.Lax,
-                Secure = config.Value.IsProduction,
-                Path = "/",
-                Expires = refresh.ExpiresAt,
-            });
-    }
-
-    private void ClearRefreshCookie()
-    {
-        Response.Cookies.Delete(
-            AuthConstants.RefreshTokenCookie,
-            new CookieOptions
-            {
-                HttpOnly = true,
-                SameSite = SameSiteMode.Lax,
-                Secure = config.Value.IsProduction,
-                Path = "/",
-            });
     }
 }
 

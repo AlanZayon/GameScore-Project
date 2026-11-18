@@ -24,7 +24,8 @@ public sealed class ScoreRecalculationService(GameScoreDbContext db, IOptions<Ap
         var visible = db.Reviews.Where(r =>
             r.GameId == gameId
             && r.DeletedAt == null
-            && r.Status == DbReviewStatus.PUBLISHED);
+            && r.Status == DbReviewStatus.PUBLISHED
+            && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED);
 
         var positive = await visible.CountAsync(r => r.Recommended, cancellationToken);
         var negative = await visible.CountAsync(r => !r.Recommended, cancellationToken);

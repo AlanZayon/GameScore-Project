@@ -2,6 +2,7 @@ using GameScore.Application.Configuration;
 using GameScore.Application.Errors;
 using GameScore.Application.Http;
 using GameScore.Infrastructure.Auth;
+using GameScore.Infrastructure.Cache;
 using GameScore.Infrastructure.Crypto;
 using GameScore.Infrastructure.Integrations;
 using GameScore.Infrastructure.Jobs;
@@ -23,6 +24,8 @@ public sealed class ReviewsService
     private readonly ScoreRecalculationService _scores;
     private readonly GameImportService _importer;
     private readonly BackgroundJobScheduler _jobs;
+    private readonly AuthService _auth;
+    private readonly CacheService _cache;
     private readonly AppConfig _config;
 
     public ReviewsService(
@@ -34,6 +37,8 @@ public sealed class ReviewsService
         ScoreRecalculationService scores,
         GameImportService importer,
         BackgroundJobScheduler jobs,
+        AuthService auth,
+        CacheService cache,
         IOptions<AppConfig> config)
     {
         _db = db;
@@ -44,6 +49,8 @@ public sealed class ReviewsService
         _scores = scores;
         _importer = importer;
         _jobs = jobs;
+        _auth = auth;
+        _cache = cache;
         _config = config.Value;
     }
 
@@ -92,26 +99,18 @@ public sealed class ReviewsService
             throw new NotFoundException(ErrorCodes.ReviewNotFound, "Review not found");
         }
 
+        if (bundle.Review.ModerationStatus == DbReviewModerationStatus.MODERATION_REQUIRED
+            && viewerId != bundle.Review.UserId)
+        {
+            throw new NotFoundException(ErrorCodes.ReviewNotFound, "Review not found");
+        }
+
         return (await MapManyAsync([bundle], viewerId, cancellationToken))[0];
     }
 
-    public Task<object> CreateAsync(
+    public async Task<object> CreateAsync(
         string slug,
         Guid userId,
-        int reputationScore,
-        bool recommended,
-        int? rating,
-        string text,
-        int? hoursPlayed,
-        Guid? platformId,
-        string? clientIp,
-        CancellationToken cancellationToken = default) =>
-        CreateInternalAsync(slug, null, userId, reputationScore, recommended, rating, text, hoursPlayed, platformId, clientIp, cancellationToken);
-
-    public async Task<object> CreateForExternalAsync(
-        string externalId,
-        Guid userId,
-        int reputationScore,
         bool recommended,
         int? rating,
         string text,
@@ -120,13 +119,35 @@ public sealed class ReviewsService
         string? clientIp,
         CancellationToken cancellationToken = default)
     {
+        await _auth.AssertEmailVerifiedAsync(userId, cancellationToken);
+        return await CreateInternalAsync(
+            slug, null, userId, recommended, rating, text, hoursPlayed, platformId, clientIp, cancellationToken);
+    }
+
+    public async Task<object> CreateForExternalAsync(
+        string externalId,
+        Guid userId,
+        bool recommended,
+        int? rating,
+        string text,
+        int? hoursPlayed,
+        Guid? platformId,
+        string? clientIp,
+        CancellationToken cancellationToken = default)
+    {
+        await _auth.AssertEmailVerifiedAsync(userId, cancellationToken);
+        await AssertImportQuotaAsync(userId, cancellationToken);
         var imported = await _importer.ImportByExternalIdAsync(externalId, cancellationToken);
+        if (imported.Created)
+        {
+            await IncrementImportQuotaAsync(userId, cancellationToken);
+        }
+
         var resolvedPlatform = await ResolvePlatformRefAsync(imported.GameId, platformId, cancellationToken);
         return await CreateInternalAsync(
             imported.Slug,
             imported.GameId,
             userId,
-            reputationScore,
             recommended,
             rating,
             text,
@@ -139,7 +160,6 @@ public sealed class ReviewsService
     public async Task<object> UpdateAsync(
         Guid id,
         Guid userId,
-        int reputationScore,
         bool? recommended,
         int? rating,
         string? text,
@@ -147,6 +167,8 @@ public sealed class ReviewsService
         Guid? platformId,
         CancellationToken cancellationToken = default)
     {
+        await _auth.AssertEmailVerifiedAsync(userId, cancellationToken);
+
         var bundle = await _reviews.LoadTrackedAsync(id, cancellationToken);
         if (bundle is null || bundle.Review.DeletedAt is not null)
         {
@@ -157,6 +179,9 @@ public sealed class ReviewsService
         {
             throw new ForbiddenException(ErrorCodes.ReviewNotOwned, "You can only edit your own reviews");
         }
+
+        var author = await _db.Users.AsNoTracking().FirstAsync(u => u.Id == userId, cancellationToken);
+        var reputationScore = author.ReputationScore;
 
         var review = bundle.Review;
         var nextRecommended = recommended ?? review.Recommended;
@@ -234,6 +259,7 @@ public sealed class ReviewsService
         }
 
         var review = bundle.Review;
+        var wasPubliclyCounted = review.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED;
         review.DeletedAt = DateTime.UtcNow;
         review.DeletedById = userId;
         review.DeletionReason = reason ?? "Deleted by author";
@@ -242,8 +268,12 @@ public sealed class ReviewsService
 
         var author = await _db.Users.FirstAsync(u => u.Id == review.UserId, cancellationToken);
         await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
-        _reputation.ApplyToUser(author, "REVIEW_DELETED", "review", review.Id);
-        await _scores.BumpDailyActivityAsync(review.GameId, review.Recommended, review.CreatedAt, -1, cancellationToken);
+        if (wasPubliclyCounted)
+        {
+            _reputation.ApplyToUser(author, "REVIEW_DELETED", "review", review.Id);
+            await _scores.BumpDailyActivityAsync(review.GameId, review.Recommended, review.CreatedAt, -1, cancellationToken);
+        }
+
         await _scores.RecalculateInsideAsync(review.GameId, true, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
@@ -255,8 +285,13 @@ public sealed class ReviewsService
 
     public async Task<object> VoteAsync(Guid id, bool useful, Guid voterId, CancellationToken cancellationToken = default)
     {
+        await _auth.AssertEmailVerifiedAsync(voterId, cancellationToken);
+
         var bundle = await _reviews.LoadTrackedAsync(id, cancellationToken);
-        if (bundle is null || bundle.Review.DeletedAt is not null || bundle.Review.Status != DbReviewStatus.PUBLISHED)
+        if (bundle is null
+            || bundle.Review.DeletedAt is not null
+            || bundle.Review.Status != DbReviewStatus.PUBLISHED
+            || bundle.Review.ModerationStatus == DbReviewModerationStatus.MODERATION_REQUIRED)
         {
             throw new NotFoundException(ErrorCodes.ReviewNotFound, "Review not found");
         }
@@ -369,6 +404,8 @@ public sealed class ReviewsService
         string? details,
         CancellationToken cancellationToken = default)
     {
+        await _auth.AssertEmailVerifiedAsync(reporterId, cancellationToken);
+
         var review = await _db.Reviews.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
         if (review is null)
         {
@@ -402,7 +439,6 @@ public sealed class ReviewsService
         string slug,
         Guid? gameId,
         Guid userId,
-        int reputationScore,
         bool recommended,
         int? rating,
         string text,
@@ -424,6 +460,9 @@ public sealed class ReviewsService
 
         platformId = await ResolvePlatformRefAsync(gameId.Value, platformId, cancellationToken);
         AssertPayload(recommended, text, rating, hoursPlayed);
+
+        var author = await _db.Users.FirstAsync(u => u.Id == userId, cancellationToken);
+        var reputationScore = author.ReputationScore;
 
         var fingerprint = HashUtil.ReviewFingerprint(text);
         var ipHash = HashUtil.HashClientIp(clientIp, _config.Jwt.AccessSecret);
@@ -452,16 +491,24 @@ public sealed class ReviewsService
         };
 
         _db.Reviews.Add(review);
-        var author = await _db.Users.FirstAsync(u => u.Id == userId, cancellationToken);
 
+        var holdForModeration = moderation == DbReviewModerationStatus.MODERATION_REQUIRED;
         await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
-        _reputation.ApplyToUser(author, "REVIEW_PUBLISHED", "review", review.Id);
-        await _scores.BumpDailyActivityAsync(gameId.Value, recommended, now, 1, cancellationToken);
+        if (!holdForModeration)
+        {
+            _reputation.ApplyToUser(author, "REVIEW_PUBLISHED", "review", review.Id);
+            await _scores.BumpDailyActivityAsync(gameId.Value, recommended, now, 1, cancellationToken);
+        }
+
         await _scores.RecalculateInsideAsync(gameId.Value, true, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        _jobs.EnqueueDetectReviewBomb(gameId.Value, DateHelpers.IsoDate(now));
+        if (!holdForModeration)
+        {
+            _jobs.EnqueueDetectReviewBomb(gameId.Value, DateHelpers.IsoDate(now));
+        }
+
         _jobs.EnqueueRecalculateGameScore(gameId.Value);
         _jobs.EnqueueInvalidateRankings();
         await _reputation.InvalidateUserStatsAsync(userId, cancellationToken);
@@ -469,6 +516,29 @@ public sealed class ReviewsService
         var bundle = await _reviews.LoadAsync(review.Id, cancellationToken);
         return (await MapManyAsync([bundle!], userId, cancellationToken))[0];
     }
+
+    private async Task AssertImportQuotaAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var key = ImportQuotaKey(userId);
+        var used = await _cache.GetAsync<int?>(key, cancellationToken) ?? 0;
+        if (used >= _config.AntiSpam.MaxImportsPerUserPerDay)
+        {
+            throw new TooManyRequestsException(
+                ErrorCodes.ImportRateLimitExceeded,
+                "Daily game import limit reached");
+        }
+    }
+
+    private async Task IncrementImportQuotaAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var key = ImportQuotaKey(userId);
+        var used = await _cache.GetAsync<int?>(key, cancellationToken) ?? 0;
+        var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+        await _cache.SetAsync(key, used + 1, tomorrow - DateTime.UtcNow, cancellationToken);
+    }
+
+    private static string ImportQuotaKey(Guid userId) =>
+        $"import-quota:{userId:N}:{DateTime.UtcNow:yyyyMMdd}";
 
     private static object VoteResponse(ReviewEntity review, bool useful) =>
         new

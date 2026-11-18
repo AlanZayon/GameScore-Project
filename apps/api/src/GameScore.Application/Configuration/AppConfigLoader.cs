@@ -53,15 +53,8 @@ public static class AppConfigLoader
 
         if (isProduction)
         {
-            if (accessSecret.Value is { Length: < 32 })
-            {
-                problems.Add("JWT_SECRET must be at least 32 characters long in production");
-            }
-
-            if (refreshSecret.Value is { Length: < 32 })
-            {
-                problems.Add("JWT_REFRESH_SECRET must be at least 32 characters long in production");
-            }
+            ValidateProductionSecret(accessSecret.Value, "JWT_SECRET", problems);
+            ValidateProductionSecret(refreshSecret.Value, "JWT_REFRESH_SECRET", problems);
 
             if (string.IsNullOrWhiteSpace(env.GetValueOrDefault("SMTP_HOST")))
             {
@@ -137,9 +130,41 @@ public static class AppConfigLoader
                 MaxReviewsPerDay = ReadInt(env, "ANTISPAM_MAX_REVIEWS_PER_DAY", 20),
                 MinimumTextLength = ReadInt(env, "ANTISPAM_MIN_TEXT_LENGTH", 20),
                 MaxAccountsPerIp = ReadInt(env, "ANTISPAM_MAX_ACCOUNTS_PER_IP", 5),
+                MaxImportsPerUserPerDay = ReadInt(env, "ANTISPAM_MAX_IMPORTS_PER_USER_PER_DAY", 10),
             },
             Smtp = smtp,
         };
+    }
+
+    private static readonly string[] ForbiddenSecretMarkers =
+    [
+        "dev-only-",
+        "change-me",
+        "change_me",
+    ];
+
+    private static void ValidateProductionSecret(string? value, string key, List<string> problems)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        if (value.Length < 32)
+        {
+            problems.Add($"{key} must be at least 32 characters long in production");
+        }
+
+        foreach (var marker in ForbiddenSecretMarkers)
+        {
+            if (value.Contains(marker, StringComparison.OrdinalIgnoreCase))
+            {
+                problems.Add(
+                    $"{key} looks like a development placeholder; generate a unique secret "
+                    + "(e.g. openssl rand -base64 48)");
+                break;
+            }
+        }
     }
 
     private static string ReadNodeEnv(IReadOnlyDictionary<string, string?> env)
@@ -156,7 +181,7 @@ public static class AppConfigLoader
     /// Converts a Prisma-style Postgres URL into an Npgsql keyword connection string.
     /// Strips Prisma-only query keys (notably <c>schema</c>).
     /// </summary>
-    internal static string NormalizeNpgsqlUrl(string url)
+    public static string NormalizeNpgsqlUrl(string url)
     {
         var trimmed = url.Trim();
         if (trimmed.StartsWith("Host=", StringComparison.OrdinalIgnoreCase)
@@ -184,6 +209,7 @@ public static class AppConfigLoader
         var database = uri.AbsolutePath.Trim('/');
         var host = uri.Host is "localhost" ? "127.0.0.1" : uri.Host;
         var port = uri.IsDefaultPort ? 5432 : uri.Port;
+        var sslMode = ReadQueryValue(uri.Query, "sslmode");
 
         var builder = new System.Text.StringBuilder();
         builder.Append("Host=").Append(host);
@@ -203,8 +229,57 @@ public static class AppConfigLoader
             builder.Append(";Password=").Append(password);
         }
 
+        // Neon and most managed Postgres require TLS; Prisma-style ?sslmode=require must survive.
+        if (!string.IsNullOrWhiteSpace(sslMode))
+        {
+            builder.Append(";SSL Mode=").Append(MapSslMode(sslMode));
+        }
+        else if (host.Contains("neon.tech", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.Append(";SSL Mode=Require");
+        }
+
         return builder.ToString();
     }
+
+    private static string? ReadQueryValue(string query, string key)
+    {
+        if (string.IsNullOrEmpty(query))
+        {
+            return null;
+        }
+
+        var trimmed = query.StartsWith('?') ? query[1..] : query;
+        foreach (var part in trimmed.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var pair = part.Split('=', 2);
+            if (pair.Length == 0)
+            {
+                continue;
+            }
+
+            if (!string.Equals(Uri.UnescapeDataString(pair[0]), key, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return pair.Length > 1 ? Uri.UnescapeDataString(pair[1]) : "";
+        }
+
+        return null;
+    }
+
+    private static string MapSslMode(string raw) =>
+        raw.Trim().ToLowerInvariant() switch
+        {
+            "disable" => "Disable",
+            "allow" => "Allow",
+            "prefer" => "Prefer",
+            "require" => "Require",
+            "verify-ca" => "VerifyCA",
+            "verify-full" => "VerifyFull",
+            _ => "Require",
+        };
 
     private static (string? Value, string? Problem) ReadString(
         IReadOnlyDictionary<string, string?> env,

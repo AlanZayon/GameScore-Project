@@ -3,7 +3,7 @@
 # Multi-stage: SDK build + runtime. Prisma CLI applies existing SQL migrations
 # on start so the shared Postgres schema stays the source of truth.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-bookworm-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 WORKDIR /src
 COPY apps/api/GameScore.slnx ./
 COPY apps/api/src ./src
@@ -11,7 +11,7 @@ COPY apps/api/tests ./tests
 RUN dotnet restore GameScore.slnx \
  && dotnet publish src/GameScore.Api/GameScore.Api.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-bookworm-slim AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 WORKDIR /app
 
 RUN apt-get update \

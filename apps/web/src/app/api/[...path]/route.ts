@@ -51,7 +51,7 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
 
   const upstream = await nodeRequest(target, method, outbound, body);
 
-  const response = new NextResponse(upstream.body, {
+  const response = new NextResponse(new Uint8Array(upstream.body), {
     status: upstream.statusCode,
   });
 

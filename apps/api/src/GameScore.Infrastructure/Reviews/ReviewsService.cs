@@ -120,8 +120,30 @@ public sealed class ReviewsService
         CancellationToken cancellationToken = default)
     {
         await _auth.AssertEmailVerifiedAsync(userId, cancellationToken);
-        return await CreateInternalAsync(
-            slug, null, userId, recommended, rating, text, hoursPlayed, platformId, clientIp, cancellationToken);
+        try
+        {
+            return await CreateInternalAsync(
+                slug, null, userId, recommended, rating, text, hoursPlayed, platformId, clientIp, cancellationToken);
+        }
+        catch (ConflictException ex) when (ex.Code == ErrorCodes.ReviewAlreadyExists)
+        {
+            var game = await _db.Games.AsNoTracking().FirstOrDefaultAsync(g => g.Slug == slug, cancellationToken);
+            if (game is null)
+            {
+                throw;
+            }
+
+            var existingId = await _db.Reviews.AsNoTracking()
+                .Where(r => r.UserId == userId && r.GameId == game.Id && r.DeletedAt == null)
+                .Select(r => (Guid?)r.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (existingId is null)
+            {
+                throw;
+            }
+
+            return await GetByIdAsync(existingId.Value, userId, cancellationToken);
+        }
     }
 
     public async Task<object> CreateForExternalAsync(
@@ -159,6 +181,20 @@ public sealed class ReviewsService
             }
 
             return review;
+        }
+        catch (ConflictException ex) when (ex.Code == ErrorCodes.ReviewAlreadyExists)
+        {
+            // Retry after a client timeout / false 500: review already landed — return it.
+            var existingId = await _db.Reviews.AsNoTracking()
+                .Where(r => r.UserId == userId && r.GameId == imported.GameId && r.DeletedAt == null)
+                .Select(r => (Guid?)r.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (existingId is null)
+            {
+                throw;
+            }
+
+            return await GetByIdAsync(existingId.Value, userId, cancellationToken);
         }
         catch
         {
@@ -498,6 +534,7 @@ public sealed class ReviewsService
             HoursPlayed = hoursPlayed,
             PlatformId = platformId,
             RankingScore = rankingScore,
+            Status = DbReviewStatus.PUBLISHED,
             ModerationStatus = moderation,
             TextFingerprint = fingerprint,
             AuthorIpHash = ipHash,
@@ -521,17 +558,38 @@ public sealed class ReviewsService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        if (!holdForModeration)
+        // Post-commit side effects must not turn a successful publish into HTTP 500.
+        try
         {
-            _jobs.EnqueueDetectReviewBomb(gameId.Value, DateHelpers.IsoDate(now));
+            if (!holdForModeration)
+            {
+                _jobs.EnqueueDetectReviewBomb(gameId.Value, DateHelpers.IsoDate(now));
+            }
+
+            _jobs.EnqueueRecalculateGameScore(gameId.Value);
+            _jobs.EnqueueInvalidateRankings();
+            await _reputation.InvalidateUserStatsAsync(userId, cancellationToken);
+        }
+        catch
+        {
+            // Review is already durable; background/cache failures are recoverable.
         }
 
-        _jobs.EnqueueRecalculateGameScore(gameId.Value);
-        _jobs.EnqueueInvalidateRankings();
-        await _reputation.InvalidateUserStatsAsync(userId, cancellationToken);
+        try
+        {
+            var bundle = await _reviews.LoadAsync(review.Id, cancellationToken);
+            if (bundle is not null)
+            {
+                return (await MapManyAsync([bundle], userId, cancellationToken))[0];
+            }
+        }
+        catch
+        {
+            // Fall through to a minimal DTO — the review itself is already saved.
+        }
 
-        var bundle = await _reviews.LoadAsync(review.Id, cancellationToken);
-        return (await MapManyAsync([bundle!], userId, cancellationToken))[0];
+        var game = await _db.Games.AsNoTracking().FirstAsync(g => g.Id == gameId.Value, cancellationToken);
+        return ReviewMapper.ToDto(review, author, game, null, userId);
     }
 
     private async Task AssertImportQuotaAsync(Guid userId, CancellationToken cancellationToken)

@@ -77,16 +77,30 @@ public sealed class CacheService
             _memoryKeys.TryRemove(key, out _);
         }
 
-        if (_redis?.IsConnected == true)
+        if (_redis?.IsConnected != true)
         {
-            var server = _redis.GetServers().FirstOrDefault();
-            if (server is not null)
+            return;
+        }
+
+        // Managed Redis often rejects KEYS/SCAN against replicas or restricted ACLs.
+        // Cache drift is preferable to failing a request that already committed.
+        try
+        {
+            var server = _redis.GetServers().FirstOrDefault(s => s.IsConnected && !s.IsReplica);
+            if (server is null)
             {
-                foreach (var key in server.Keys(pattern: $"{prefix}*"))
-                {
-                    await _redis.GetDatabase().KeyDeleteAsync(key);
-                }
+                return;
             }
+
+            var db = _redis.GetDatabase();
+            foreach (var key in server.Keys(pattern: $"{prefix}*"))
+            {
+                await db.KeyDeleteAsync(key);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to invalidate Redis keys with prefix {Prefix}", prefix);
         }
     }
 }

@@ -181,7 +181,8 @@ export function videoGameJsonLd(input: {
   if (input.image) data.image = input.image;
   if (input.genres.length > 0) data.genre = input.genres;
   if (input.releaseDate) data.datePublished = input.releaseDate;
-  if (input.totalReviews > 0) {
+  // Avoid advertising a percentage while the product still labels the score FEW_REVIEWS.
+  if (input.totalReviews >= 10) {
     data.aggregateRating = {
       '@type': 'AggregateRating',
       ratingValue: input.positivePercentage,

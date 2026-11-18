@@ -8,9 +8,10 @@ import { Link } from '@/i18n/navigation';
 import { ScoreBadge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
+import { formatScorePercentage, scoreBarWidth } from '@/lib/score-display';
 
 function scoreText(game: GameSummaryDto) {
-  return game.score.totalReviews > 0 ? `${Math.round(game.score.positivePercentage)}%` : '—';
+  return formatScorePercentage(game.score);
 }
 
 function platformLine(game: GameSummaryDto) {
@@ -103,7 +104,7 @@ export function GameCard({
   const year = game.releaseDate ? game.releaseDate.slice(0, 4) : null;
   const label = t(`labels.${game.score.label}`);
   const platforms = platformLine(game);
-  const positiveWidth = game.score.totalReviews === 0 ? 0 : game.score.positivePercentage;
+  const positiveWidth = scoreBarWidth(game.score);
 
   return (
     <Link href={`/games/${game.slug}`} className="block h-full">

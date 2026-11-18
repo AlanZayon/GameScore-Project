@@ -130,7 +130,15 @@ public sealed class ScoreRecalculationService(GameScoreDbContext db, IOptions<Ap
         IQueryable<ReviewEntity> visible,
         CancellationToken cancellationToken)
     {
-        await db.GameStatisticsPlatforms.Where(p => p.GameId == gameId).ExecuteDeleteAsync(cancellationToken);
+        // Prefer tracked RemoveRange over ExecuteDelete so this participates cleanly
+        // in the caller's ambient EF transaction (publish path).
+        var existingPlatformStats = await db.GameStatisticsPlatforms
+            .Where(p => p.GameId == gameId)
+            .ToListAsync(cancellationToken);
+        if (existingPlatformStats.Count > 0)
+        {
+            db.GameStatisticsPlatforms.RemoveRange(existingPlatformStats);
+        }
 
         var rows = await visible
             .Where(r => r.PlatformId != null)

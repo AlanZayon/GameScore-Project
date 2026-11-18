@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { ScoreBadge } from '@/components/ui/badge';
 import { Link } from '@/i18n/navigation';
+import { formatScorePercentage, scoreBarWidth, shouldShowScorePercentage } from '@/lib/score-display';
 
 export function ScorePanel({
   score,
@@ -16,7 +17,7 @@ export function ScorePanel({
   hasReviewBombEvents?: boolean;
 }) {
   const t = useTranslations('score');
-  const positiveWidth = score.totalReviews === 0 ? 0 : score.positivePercentage;
+  const positiveWidth = scoreBarWidth(score);
   const alt =
     scoreExcludingReviewBombs && scoreExcludingReviewBombs.totalReviews !== score.totalReviews
       ? scoreExcludingReviewBombs
@@ -26,7 +27,7 @@ export function ScorePanel({
     <div className="rounded-card border border-border-subtle bg-surface p-4">
       <div className="flex items-end justify-between gap-3">
         <p className="score-num text-4xl font-bold leading-none tracking-tight sm:text-5xl">
-          {score.totalReviews === 0 ? '—' : `${Math.round(score.positivePercentage)}%`}
+          {formatScorePercentage(score)}
         </p>
         <ScoreBadge label={score.label} text={t(`labels.${score.label}`)} />
       </div>
@@ -50,7 +51,7 @@ export function ScorePanel({
         </p>
       ) : null}
       {hasReviewBombEvents ? <p className="mt-2 text-xs text-mixed">{t('bombHint')}</p> : null}
-      {alt ? (
+      {alt && shouldShowScorePercentage(alt.label, alt.totalReviews) ? (
         <p className="mt-1.5 text-xs text-content-subtle">
           {t('excludingBombs', { value: Math.round(alt.positivePercentage) })}
         </p>

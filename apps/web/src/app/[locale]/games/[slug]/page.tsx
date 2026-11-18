@@ -33,9 +33,13 @@ export async function generateMetadata({
   if (!game) return { title: 'GameScore', robots: { index: false, follow: false } };
 
   const scorePart =
-    game.score.totalReviews > 0
+    game.score.totalReviews > 0 &&
+    game.score.label !== 'FEW_REVIEWS' &&
+    game.score.label !== 'NO_REVIEWS'
       ? `${Math.round(game.score.positivePercentage)}% · ${game.score.totalReviews} reviews`
-      : null;
+      : game.score.totalReviews > 0
+        ? `${game.score.totalReviews} reviews`
+        : null;
   const baseDescription = game.summary ?? game.name;
   const description = scorePart ? `${baseDescription} (${scorePart})` : baseDescription;
   const cover = resolveCoverImageUrl(game.name, game.coverImageUrl);

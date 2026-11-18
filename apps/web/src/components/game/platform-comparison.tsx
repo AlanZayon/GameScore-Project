@@ -86,7 +86,9 @@ export function PlatformComparison({
                 <ScoreBadge label={row.labelScore} text={scoreT(`labels.${row.labelScore}`)} />
                 <Badge tone="neutral">
                   <span className="score-num">
-                    {Math.round(row.positivePercentage)}% · {row.totalReviews}
+                    {row.labelScore === 'FEW_REVIEWS' || row.labelScore === 'NO_REVIEWS'
+                      ? `— · ${row.totalReviews}`
+                      : `${Math.round(row.positivePercentage)}% · ${row.totalReviews}`}
                   </span>
                 </Badge>
               </div>

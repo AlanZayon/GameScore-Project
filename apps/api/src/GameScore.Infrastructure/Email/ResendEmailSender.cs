@@ -43,7 +43,8 @@ public sealed class ResendEmailSender : IEmailSender
             From: smtp.From,
             To: [message.To],
             Subject: message.Subject,
-            Text: message.Text));
+            Text: message.Text,
+            Html: message.Html));
 
         using var response = await client.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -60,5 +61,6 @@ public sealed class ResendEmailSender : IEmailSender
         [property: JsonPropertyName("from")] string From,
         [property: JsonPropertyName("to")] string[] To,
         [property: JsonPropertyName("subject")] string Subject,
-        [property: JsonPropertyName("text")] string Text);
+        [property: JsonPropertyName("text")] string Text,
+        [property: JsonPropertyName("html")] string? Html);
 }

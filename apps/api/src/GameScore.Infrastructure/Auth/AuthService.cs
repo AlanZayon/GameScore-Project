@@ -213,10 +213,7 @@ public sealed class AuthService
 
         var resetUrl = $"{_config.WebUrl.TrimEnd('/')}/reset-password?token={token}";
         await DeliverEmailAsync(
-            user.Email,
-            "Redefinir senha — GameScore",
-            $"Redefina sua senha do GameScore com este link (válido por uma hora):\n{resetUrl}\n\n" +
-            $"Reset your GameScore password with this link (valid for one hour):\n{resetUrl}\n",
+            EmailTemplates.PasswordReset(user.Email, resetUrl, _config.WebUrl),
             cancellationToken);
     }
 
@@ -302,22 +299,19 @@ public sealed class AuthService
 
         var verifyUrl = $"{_config.WebUrl.TrimEnd('/')}/verify-email?token={token}";
         await DeliverEmailAsync(
-            email,
-            "Confirme seu e-mail — GameScore",
-            $"Confirme seu e-mail do GameScore com este link (válido por 24 horas):\n{verifyUrl}\n\n" +
-            $"Confirm your GameScore email with this link (valid for 24 hours):\n{verifyUrl}\n",
+            EmailTemplates.Verification(email, verifyUrl, _config.WebUrl),
             cancellationToken);
     }
 
-    private async Task DeliverEmailAsync(string to, string subject, string text, CancellationToken cancellationToken)
+    private async Task DeliverEmailAsync(EmailMessage message, CancellationToken cancellationToken)
     {
         try
         {
-            await _email.SendAsync(new EmailMessage(to, subject, text), cancellationToken);
+            await _email.SendAsync(message, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {To}", to);
+            _logger.LogError(ex, "Failed to send email to {To}", message.To);
         }
     }
 

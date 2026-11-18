@@ -13,9 +13,10 @@ public sealed class ConsoleEmailSender(ILogger<ConsoleEmailSender> logger) : IEm
     public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         logger.LogInformation(
-            "Email (console): To={To} Subject={Subject}\n{Text}",
+            "Email (console): To={To} Subject={Subject} Html={HasHtml}\n{Text}",
             message.To,
             message.Subject,
+            !string.IsNullOrWhiteSpace(message.Html),
             message.Text);
         return Task.CompletedTask;
     }
@@ -32,7 +33,15 @@ public sealed class SmtpEmailSender(IOptions<AppConfig> config, ILogger<SmtpEmai
         mime.From.Add(MailboxAddress.Parse(smtp.From));
         mime.To.Add(MailboxAddress.Parse(message.To));
         mime.Subject = message.Subject;
-        mime.Body = new TextPart("plain") { Text = message.Text };
+        if (!string.IsNullOrWhiteSpace(message.Html))
+        {
+            var builder = new BodyBuilder { TextBody = message.Text, HtmlBody = message.Html };
+            mime.Body = builder.ToMessageBody();
+        }
+        else
+        {
+            mime.Body = new TextPart("plain") { Text = message.Text };
+        }
 
         using var client = new SmtpClient();
         // 465 = implicit TLS. 587 / Resend = STARTTLS when Secure=true.

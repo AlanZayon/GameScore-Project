@@ -39,6 +39,8 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Keep auth CTAs off the verify-email flow until the page itself offers them after success.
+  const hideAuthCtas = pathname === '/verify-email';
 
   return (
     <header className="sticky top-0 z-30 border-b border-border-subtle bg-canvas">
@@ -106,7 +108,7 @@ export function SiteHeader() {
                 {t('logout')}
               </button>
             </Dropdown>
-          ) : (
+          ) : hideAuthCtas ? null : (
             <div className="hidden gap-1.5 sm:flex">
               <Link
                 href="/login"
@@ -141,7 +143,7 @@ export function SiteHeader() {
             <NavLink href="/games">{t('games')}</NavLink>
             <NavLink href="/rankings">{t('rankings')}</NavLink>
             <NavLink href="/scoring">{t('scoring')}</NavLink>
-            {!user ? (
+            {!user && !hideAuthCtas ? (
               <>
                 <Link href="/login" className="rounded-md px-2 py-2 text-content-muted">
                   {t('login')}
@@ -150,7 +152,7 @@ export function SiteHeader() {
                   {t('register')}
                 </Link>
               </>
-            ) : (
+            ) : user ? (
               <>
                 <Link href={`/profile/${user.username}`} className="rounded-md px-2 py-2 text-content-muted">
                   {t('profile')}
@@ -171,7 +173,7 @@ export function SiteHeader() {
                   {t('logout')}
                 </button>
               </>
-            )}
+            ) : null}
           </nav>
         </div>
       ) : null}

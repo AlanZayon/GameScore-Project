@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { request as httpRequest, type IncomingMessage, type RequestOptions } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { NextRequest, NextResponse } from 'next/server';
@@ -82,14 +83,24 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   const inboundRefresh = readCookieValue(request.headers.get('cookie'), 'gs_refresh_token');
   const outboundPair = rawCookies[0]?.split(';', 1)[0] ?? '';
   const outboundEq = outboundPair.indexOf('=');
-  const outboundLen = outboundEq > 0 ? outboundPair.slice(outboundEq + 1).length : 0;
+  const outboundValue = outboundEq > 0 ? outboundPair.slice(outboundEq + 1) : '';
 
-  response.headers.set('x-gs-proxy', '2');
+  response.headers.set('x-gs-proxy', '3');
   response.headers.set('x-gs-proxy-cookies', String(rawCookies.length));
   response.headers.set('x-gs-proxy-refresh-in', inboundRefresh ? String(inboundRefresh.length) : '0');
-  response.headers.set('x-gs-proxy-refresh-out', String(outboundLen));
+  response.headers.set('x-gs-proxy-refresh-out', String(outboundValue.length));
+  if (outboundValue) {
+    response.headers.set('x-gs-proxy-fp-out', fingerprint(outboundValue));
+  }
+  if (inboundRefresh) {
+    response.headers.set('x-gs-proxy-fp-in', fingerprint(inboundRefresh));
+  }
 
   return response;
+}
+
+function fingerprint(value: string): string {
+  return createHash('sha256').update(value).digest('hex').slice(0, 12);
 }
 
 function nodeRequest(

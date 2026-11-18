@@ -1,3 +1,5 @@
+import { request as httpRequest, type IncomingMessage, type RequestOptions } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -10,7 +12,10 @@ function upstreamBase(): string {
 
 /**
  * Proxy the ASP.NET API under the web origin so the refresh cookie is first-party.
- * Prefer NextResponse.cookies.set — raw Set-Cookie headers are unreliable on Vercel.
+ *
+ * Uses node:http(s) instead of fetch so Set-Cookie headers stay intact (Node fetch
+ * can hide/join them). The upstream name=value is preserved exactly; only Path /
+ * HttpOnly / Secure / SameSite=Lax are forced for first-party use on the web origin.
  */
 async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   const base = upstreamBase();
@@ -24,7 +29,7 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   const target = new URL(`${base}/${path.map(encodeURIComponent).join('/')}`);
   target.search = request.nextUrl.search;
 
-  const headers = new Headers();
+  const outbound: Record<string, string> = {};
   for (const name of [
     'accept',
     'accept-language',
@@ -36,27 +41,21 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
     'x-request-id',
   ]) {
     const value = request.headers.get(name);
-    if (value) headers.set(name, value);
+    if (value) outbound[name] = value;
   }
 
-  const init: RequestInit = {
-    method: request.method,
-    headers,
-    redirect: 'manual',
-  };
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    init.body = await request.arrayBuffer();
-  }
+  const method = request.method.toUpperCase();
+  const hasBody = method !== 'GET' && method !== 'HEAD';
+  const body = hasBody ? Buffer.from(await request.arrayBuffer()) : undefined;
+  if (body) outbound['content-length'] = String(body.length);
 
-  const upstream = await fetch(target, init);
-  const body = await upstream.arrayBuffer();
+  const upstream = await nodeRequest(target, method, outbound, body);
 
-  const response = new NextResponse(body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
+  const response = new NextResponse(upstream.body, {
+    status: upstream.statusCode,
   });
 
-  upstream.headers.forEach((value, key) => {
+  for (const [key, value] of Object.entries(upstream.headers)) {
     const lower = key.toLowerCase();
     if (
       lower === 'set-cookie' ||
@@ -65,66 +64,105 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
       lower === 'content-length' ||
       lower === 'connection'
     ) {
-      return;
+      continue;
     }
-    response.headers.set(key, value);
-  });
-
-  const rawCookies = collectSetCookies(upstream.headers);
-  for (const raw of rawCookies) {
-    applyFirstPartyCookie(response, raw);
+    if (Array.isArray(value)) {
+      for (const item of value) response.headers.append(key, item);
+    } else if (value !== undefined) {
+      response.headers.set(key, value);
+    }
   }
-  response.headers.set('x-gs-proxy', '1');
+
+  const rawCookies = normalizeSetCookie(upstream.headers['set-cookie']);
+  for (const raw of rawCookies) {
+    // Prefer append so the token value is not re-encoded by NextResponse.cookies.set().
+    response.headers.append('set-cookie', toFirstPartyCookie(raw));
+  }
+
+  const inboundRefresh = readCookieValue(request.headers.get('cookie'), 'gs_refresh_token');
+  const outboundPair = rawCookies[0]?.split(';', 1)[0] ?? '';
+  const outboundEq = outboundPair.indexOf('=');
+  const outboundLen = outboundEq > 0 ? outboundPair.slice(outboundEq + 1).length : 0;
+
+  response.headers.set('x-gs-proxy', '2');
   response.headers.set('x-gs-proxy-cookies', String(rawCookies.length));
+  response.headers.set('x-gs-proxy-refresh-in', inboundRefresh ? String(inboundRefresh.length) : '0');
+  response.headers.set('x-gs-proxy-refresh-out', String(outboundLen));
 
   return response;
 }
 
-function collectSetCookies(headers: Headers): string[] {
-  if (typeof headers.getSetCookie === 'function') {
-    const listed = headers.getSetCookie();
-    if (listed.length > 0) return listed;
-  }
+function nodeRequest(
+  target: URL,
+  method: string,
+  headers: Record<string, string>,
+  body?: Buffer,
+): Promise<{ statusCode: number; headers: IncomingMessage['headers']; body: Buffer }> {
+  const transport = target.protocol === 'http:' ? httpRequest : httpsRequest;
+  const options: RequestOptions = {
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port || undefined,
+    path: `${target.pathname}${target.search}`,
+    method,
+    headers,
+  };
 
-  const fallback: string[] = [];
-  headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'set-cookie') fallback.push(value);
+  return new Promise((resolve, reject) => {
+    const req = transport(options, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      });
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode ?? 502,
+          headers: res.headers,
+          body: Buffer.concat(chunks),
+        });
+      });
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
   });
-  return fallback;
 }
 
-function applyFirstPartyCookie(response: NextResponse, setCookie: string): void {
-  const parts = setCookie.split(';').map((part) => part.trim());
-  const [nameValue, ...attrs] = parts;
-  const eq = nameValue.indexOf('=');
-  if (eq <= 0) return;
+function normalizeSetCookie(header: string | string[] | undefined): string[] {
+  if (!header) return [];
+  return Array.isArray(header) ? header : [header];
+}
 
-  const name = nameValue.slice(0, eq);
-  const value = nameValue.slice(eq + 1);
-  let expires: Date | undefined;
-  let maxAge: number | undefined;
+/** Preserve name=value exactly; only force first-party cookie attributes. */
+function toFirstPartyCookie(setCookie: string): string {
+  const parts = setCookie.split(';').map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return setCookie;
 
-  for (const attr of attrs) {
+  const [pair, ...attrs] = parts;
+  const kept = attrs.filter((attr) => {
     const lower = attr.toLowerCase();
-    if (lower.startsWith('expires=')) {
-      const parsed = new Date(attr.slice('expires='.length));
-      if (!Number.isNaN(parsed.getTime())) expires = parsed;
-    } else if (lower.startsWith('max-age=')) {
-      const parsed = Number(attr.slice('max-age='.length));
-      if (Number.isFinite(parsed)) maxAge = parsed;
-    }
-  }
-
-  response.cookies.set({
-    name,
-    value,
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/',
-    ...(expires ? { expires } : {}),
-    ...(maxAge !== undefined ? { maxAge } : {}),
+    if (lower.startsWith('domain=')) return false;
+    if (lower.startsWith('samesite=')) return false;
+    if (lower === 'partitioned') return false;
+    if (lower.startsWith('path=')) return false;
+    if (lower === 'secure') return false;
+    if (lower === 'httponly') return false;
+    return true;
   });
+
+  return [pair, 'Path=/', 'HttpOnly', 'Secure', 'SameSite=Lax', ...kept].join('; ');
+}
+
+function readCookieValue(header: string | null, name: string): string | null {
+  if (!header) return null;
+  for (const part of header.split(';')) {
+    const trimmed = part.trim();
+    const eq = trimmed.indexOf('=');
+    if (eq <= 0) continue;
+    if (trimmed.slice(0, eq) !== name) continue;
+    return trimmed.slice(eq + 1);
+  }
+  return null;
 }
 
 type RouteContext = { params: Promise<{ path: string[] }> };

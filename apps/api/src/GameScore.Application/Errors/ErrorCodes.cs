@@ -42,6 +42,8 @@ public static class ErrorCodes
     public const string CannotReportOwnReview = "CANNOT_REPORT_OWN_REVIEW";
     public const string ReviewAlreadyReported = "REVIEW_ALREADY_REPORTED";
     public const string ReviewRejectedAsSpam = "REVIEW_REJECTED_AS_SPAM";
+    public const string ReviewTextTooShort = "REVIEW_TEXT_TOO_SHORT";
+    public const string ReviewDuplicateText = "REVIEW_DUPLICATE_TEXT";
     public const string ReviewRateLimitExceeded = "REVIEW_RATE_LIMIT_EXCEEDED";
     public const string InvalidCursor = "INVALID_CURSOR";
 

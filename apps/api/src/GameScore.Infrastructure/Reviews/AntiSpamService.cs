@@ -19,13 +19,13 @@ public sealed class AntiSpamService(GameScoreDbContext db, IOptions<AppConfig> c
         if (text.Length < antiSpam.MinimumTextLength)
         {
             throw new BadRequestException(
-                ErrorCodes.ReviewRejectedAsSpam,
+                ErrorCodes.ReviewTextTooShort,
                 $"Reviews must be at least {antiSpam.MinimumTextLength} characters");
         }
 
         if (TextHelpers.WordCount(text) < 4)
         {
-            throw new BadRequestException(ErrorCodes.ReviewRejectedAsSpam, "Review text is too short");
+            throw new BadRequestException(ErrorCodes.ReviewTextTooShort, "Review text is too short");
         }
 
         if (TextHelpers.CharacterDiversity(text) < 0.15)
@@ -76,7 +76,7 @@ public sealed class AntiSpamService(GameScoreDbContext db, IOptions<AppConfig> c
         if (duplicateCount >= 2)
         {
             throw new BadRequestException(
-                ErrorCodes.ReviewRejectedAsSpam,
+                ErrorCodes.ReviewDuplicateText,
                 "This review text has already been posted recently");
         }
 

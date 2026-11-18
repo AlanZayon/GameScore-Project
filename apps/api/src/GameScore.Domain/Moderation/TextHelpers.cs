@@ -20,11 +20,18 @@ public static partial class TextHelpers
         return normalised;
     }
 
+    /// <summary>
+    /// Unique alphanumeric characters over a capped length. Using raw
+    /// unique/length wrongly rejects long natural reviews (ratio falls as
+    /// text grows) while only padding like "aaaa…" should fail.
+    /// </summary>
     public static double CharacterDiversity(string text)
     {
         var stripped = NormaliseForComparison(text).Replace(" ", "", StringComparison.Ordinal);
         if (stripped.Length == 0) return 0;
-        return stripped.Distinct().Count() / (double)stripped.Length;
+        var unique = stripped.Distinct().Count();
+        var denominator = Math.Min(stripped.Length, 36);
+        return unique / (double)denominator;
     }
 
     public static double ShoutingRatio(string text)

@@ -51,7 +51,9 @@ public sealed class TokenService
     {
         try
         {
-            var handler = new JwtSecurityTokenHandler();
+            // Keep claim names as issued (sub/jti/type). Default inbound mapping
+            // rewrites "sub" and breaks refresh/access verification lookups.
+            var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.Jwt.AccessSecret));
             var principal = handler.ValidateToken(
                 token,
@@ -212,7 +214,7 @@ public sealed class TokenService
     {
         try
         {
-            var handler = new JwtSecurityTokenHandler();
+            var handler = new JwtSecurityTokenHandler { MapInboundClaims = false };
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.Jwt.RefreshSecret));
             var principal = handler.ValidateToken(
                 token,
@@ -231,7 +233,8 @@ public sealed class TokenService
                 throw new UnauthorizedException(ErrorCodes.InvalidRefreshToken, "Wrong token type");
             }
 
-            var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            var sub = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var jti = principal.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
             if (sub is null || jti is null || !Guid.TryParse(sub, out var userId))
             {

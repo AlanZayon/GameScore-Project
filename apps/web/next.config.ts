@@ -3,10 +3,22 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const isProduction = process.env.NODE_ENV === 'production';
-/** Upstream API for same-origin /api rewrite (keeps refresh cookies first-party). */
-const apiRewriteTarget = (process.env.API_REWRITE_TARGET ?? '').replace(/\/$/, '');
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const configuredInternalUrl = process.env.API_INTERNAL_URL?.replace(/\/$/, '') ?? '';
+const configuredRewriteTarget = process.env.API_REWRITE_TARGET?.replace(/\/$/, '') ?? '';
+
+// If the dashboard still has NEXT_PUBLIC_API_URL=https://….onrender.com, use that
+// host as the rewrite/SSR upstream while forcing the browser onto same-origin /api.
+const upstreamFromPublic = /onrender\.com/i.test(configuredApiUrl)
+  ? configuredApiUrl.replace(/\/$/, '')
+  : '';
+
+const apiRewriteTarget =
+  configuredRewriteTarget || configuredInternalUrl || upstreamFromPublic;
+
+const forceSameOriginProxy = Boolean(process.env.VERCEL) && Boolean(apiRewriteTarget);
+const apiUrl = forceSameOriginProxy ? '/api' : configuredApiUrl;
 
 function contentSecurityPolicy(): string {
   return [
@@ -14,7 +26,7 @@ function contentSecurityPolicy(): string {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://images.igdb.com https://cdn.cloudflare.steamstatic.com https://i.ytimg.com",
-    `connect-src 'self' ${apiUrl}`,
+    `connect-src 'self' ${apiUrl.startsWith('http') ? apiUrl : ''}`.trim(),
     "font-src 'self'",
     "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
     "object-src 'none'",
@@ -38,6 +50,13 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Bake same-origin browser API + absolute SSR upstream into the build.
+  env: {
+    NEXT_PUBLIC_API_URL: apiUrl,
+    ...(apiRewriteTarget && !configuredInternalUrl
+      ? { API_INTERNAL_URL: apiRewriteTarget }
+      : {}),
+  },
   images: {
     // Game artwork is served from the metadata provider's CDN. Only URLs are
     // stored in the database; the images themselves are never proxied.

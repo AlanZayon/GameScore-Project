@@ -69,9 +69,9 @@ Browsers treat `gamesscore.com.br` → `*.onrender.com` as **third-party** cooki
 | Variable | Value |
 |----------|--------|
 | `NEXT_PUBLIC_SITE_URL` | `https://www.gamesscore.com.br` |
-| `NEXT_PUBLIC_API_URL` | `https://www.gamesscore.com.br/api` |
-| `API_REWRITE_TARGET` | `https://gamescore-project.onrender.com` (no trailing slash) |
-| `API_INTERNAL_URL` | `https://gamescore-project.onrender.com` (SSR talks to Render directly) |
+| `NEXT_PUBLIC_API_URL` | prefer `/api`; if it still points at `*.onrender.com`, the build rewrites the browser to `/api` automatically |
+| `API_INTERNAL_URL` | `https://gamescore-project.onrender.com` (SSR + `/api` proxy upstream) |
+| `API_REWRITE_TARGET` | optional; defaults to `API_INTERNAL_URL` or the old onrender public URL |
 
 On Render, set:
 

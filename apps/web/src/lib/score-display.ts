@@ -1,7 +1,10 @@
-import type { GameScoreDto, ScoreLabel } from '@gamescore/types';
+import type { GameScoreDto } from '@gamescore/types';
 
 /** Percentage is only meaningful once the label leaves FEW_REVIEWS. */
-export function shouldShowScorePercentage(label: ScoreLabel, totalReviews: number): boolean {
+export function shouldShowScorePercentage(
+  label: GameScoreDto['label'],
+  totalReviews: number,
+): boolean {
   return totalReviews > 0 && label !== 'FEW_REVIEWS' && label !== 'NO_REVIEWS';
 }
 

@@ -129,8 +129,14 @@ public static class DependencyInjection
         services.AddScoped<BackgroundJobRunner>();
 
         services.AddHttpClient("igdb");
+        services.AddHttpClient("resend");
 
-        if (config.Smtp is not null)
+        if (config.Smtp is not null && config.Smtp.PreferResendHttps)
+        {
+            // Render free blocks outbound SMTP 25/465/587; Resend HTTPS works.
+            services.AddSingleton<IEmailSender, ResendEmailSender>();
+        }
+        else if (config.Smtp is not null)
         {
             services.AddSingleton<IEmailSender, SmtpEmailSender>();
         }

@@ -61,4 +61,11 @@ public sealed class SmtpConfig
     public string? User { get; init; }
     public string? Pass { get; init; }
     public required string From { get; init; }
+
+    /// <summary>
+    /// Resend over SMTP is blocked on Render free; use their HTTPS API instead.
+    /// </summary>
+    public bool PreferResendHttps =>
+        Host.Contains("resend.com", StringComparison.OrdinalIgnoreCase)
+        && !string.IsNullOrWhiteSpace(Pass);
 }

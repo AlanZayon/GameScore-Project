@@ -12,7 +12,7 @@ services:
     name: gamescore-api
     runtime: docker
     plan: free
-    dockerfilePath: ./infrastructure/docker/api.Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
     envVars:

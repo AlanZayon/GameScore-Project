@@ -138,22 +138,38 @@ public sealed class ReviewsService
         await _auth.AssertEmailVerifiedAsync(userId, cancellationToken);
         await AssertImportQuotaAsync(userId, cancellationToken);
         var imported = await _importer.ImportByExternalIdAsync(externalId, cancellationToken);
-        if (imported.Created)
-        {
-            await IncrementImportQuotaAsync(userId, cancellationToken);
-        }
 
-        return await CreateInternalAsync(
-            imported.Slug,
-            imported.GameId,
-            userId,
-            recommended,
-            rating,
-            text,
-            hoursPlayed,
-            platformId,
-            clientIp,
-            cancellationToken);
+        try
+        {
+            var review = await CreateInternalAsync(
+                imported.Slug,
+                imported.GameId,
+                userId,
+                recommended,
+                rating,
+                text,
+                hoursPlayed,
+                platformId,
+                clientIp,
+                cancellationToken);
+
+            if (imported.Created)
+            {
+                await IncrementImportQuotaAsync(userId, cancellationToken);
+            }
+
+            return review;
+        }
+        catch
+        {
+            // First publish failed after import — do not leave an empty catalogue entry.
+            if (imported.Created)
+            {
+                await _importer.DeleteOrphanImportAsync(imported.GameId, cancellationToken);
+            }
+
+            throw;
+        }
     }
 
     public async Task<object> UpdateAsync(

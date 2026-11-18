@@ -91,6 +91,34 @@ public static class CatalogBootstrap
                 addedPlatforms,
                 addedGenres);
         }
+
+        await PurgeOrphanImportsAsync(db, logger, cancellationToken);
+    }
+
+    /// <summary>
+    /// Failed first-review publishes used to leave IGDB games with no reviews and
+    /// no platform/genre links. Remove those empty catalogue rows on startup.
+    /// </summary>
+    public static async Task PurgeOrphanImportsAsync(
+        GameScoreDbContext db,
+        ILogger logger,
+        CancellationToken cancellationToken = default)
+    {
+        var orphanIds = await db.Games
+            .Where(g => g.ExternalSources.Any(s => s.Provider == DbExternalProvider.IGDB))
+            .Where(g => !db.Reviews.Any(r => r.GameId == g.Id && r.DeletedAt == null))
+            .Select(g => g.Id)
+            .ToListAsync(cancellationToken);
+
+        if (orphanIds.Count == 0)
+        {
+            return;
+        }
+
+        var orphans = await db.Games.Where(g => orphanIds.Contains(g.Id)).ToListAsync(cancellationToken);
+        db.Games.RemoveRange(orphans);
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Purged {Count} IGDB imports with no reviews", orphans.Count);
     }
 
     private static string Slugify(string value)

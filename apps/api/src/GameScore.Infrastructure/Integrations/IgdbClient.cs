@@ -183,7 +183,7 @@ public sealed class GameImportService
 
     public async Task<ImportResult> ImportByExternalIdAsync(string externalId, CancellationToken cancellationToken = default)
     {
-        var existing = await _db.GameExternalSources.AsNoTracking()
+        var existing = await _db.GameExternalSources
             .Include(s => s.Game)
             .FirstOrDefaultAsync(
                 s => s.Provider == DbExternalProvider.IGDB && s.ExternalId == externalId,
@@ -191,6 +191,12 @@ public sealed class GameImportService
 
         if (existing is not null)
         {
+            var payload = await _igdb.GetGameByIdAsync(externalId, cancellationToken);
+            if (payload is not null)
+            {
+                await EnsureCatalogueLinksAsync(existing.GameId, payload, cancellationToken);
+            }
+
             return new ImportResult(
                 existing.GameId,
                 existing.Game.Slug,
@@ -201,13 +207,45 @@ public sealed class GameImportService
                 ["Game already imported"]);
         }
 
-        var payload = await _igdb.GetGameByIdAsync(externalId, cancellationToken);
-        if (payload is null)
+        var created = await _igdb.GetGameByIdAsync(externalId, cancellationToken);
+        if (created is null)
         {
             throw new NotFoundException(ErrorCodes.IgdbGameNotFound, "IGDB game not found");
         }
 
-        return await PersistAsync(payload, externalId, cancellationToken);
+        return await PersistAsync(created, externalId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Removes an IGDB-imported game that never received a review (failed first publish).
+    /// </summary>
+    public async Task<bool> DeleteOrphanImportAsync(Guid gameId, CancellationToken cancellationToken = default)
+    {
+        var hasReview = await _db.Reviews.AnyAsync(
+            r => r.GameId == gameId && r.DeletedAt == null,
+            cancellationToken);
+        if (hasReview)
+        {
+            return false;
+        }
+
+        var hasIgdb = await _db.GameExternalSources.AnyAsync(
+            s => s.GameId == gameId && s.Provider == DbExternalProvider.IGDB,
+            cancellationToken);
+        if (!hasIgdb)
+        {
+            return false;
+        }
+
+        var game = await _db.Games.FirstOrDefaultAsync(g => g.Id == gameId, cancellationToken);
+        if (game is null)
+        {
+            return false;
+        }
+
+        _db.Games.Remove(game);
+        await _db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     public async Task<ImportResult> ImportByNameAsync(string name, CancellationToken cancellationToken = default)
@@ -231,7 +269,11 @@ public sealed class GameImportService
 
         if (existing is not null)
         {
-            var game = existing.Game;
+            var game = await _db.Games.AsNoTracking()
+                .Include(g => g.Platforms).ThenInclude(gp => gp.Platform)
+                .Include(g => g.Genres).ThenInclude(gg => gg.Genre)
+                .FirstAsync(g => g.Id == existing.GameId, cancellationToken);
+
             return new
             {
                 externalId,
@@ -246,8 +288,12 @@ public sealed class GameImportService
                 releaseDate = game.ReleaseDate?.ToString("yyyy-MM-dd"),
                 developer = game.Developer,
                 publisher = game.Publisher,
-                platforms = Array.Empty<object>(),
-                genres = Array.Empty<object>(),
+                platforms = game.Platforms.Select(p => new
+                {
+                    name = p.Platform.Name,
+                    abbreviation = p.Platform.Abbreviation,
+                }),
+                genres = game.Genres.Select(g => new { name = g.Genre.Name }),
                 localSlug = game.Slug,
             };
         }
@@ -345,9 +391,230 @@ public sealed class GameImportService
             CreatedAt = now,
             UpdatedAt = now,
         });
+        _db.GameStatistics.Add(new GameStatisticsEntity
+        {
+            GameId = game.Id,
+            LastCalculatedAt = now,
+        });
 
+        await LinkPlatformsAndGenresAsync(game.Id, payload, warnings, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
         return new ImportResult(game.Id, game.Slug, game.Name, true, "IGDB", externalId, warnings);
+    }
+
+    private async Task EnsureCatalogueLinksAsync(Guid gameId, IgdbGame payload, CancellationToken cancellationToken)
+    {
+        var hasPlatforms = await _db.GamePlatforms.AnyAsync(gp => gp.GameId == gameId, cancellationToken);
+        var hasGenres = await _db.GameGenres.AnyAsync(gg => gg.GameId == gameId, cancellationToken);
+        var hasStats = await _db.GameStatistics.AnyAsync(s => s.GameId == gameId, cancellationToken);
+
+        if (hasPlatforms && hasGenres && hasStats)
+        {
+            return;
+        }
+
+        var warnings = new List<string>();
+        if (!hasStats)
+        {
+            _db.GameStatistics.Add(new GameStatisticsEntity
+            {
+                GameId = gameId,
+                LastCalculatedAt = DateTime.UtcNow,
+            });
+        }
+
+        if (!hasPlatforms || !hasGenres)
+        {
+            await LinkPlatformsAndGenresAsync(gameId, payload, warnings, cancellationToken);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task LinkPlatformsAndGenresAsync(
+        Guid gameId,
+        IgdbGame payload,
+        IList<string> warnings,
+        CancellationToken cancellationToken)
+    {
+        var linkedPlatformIds = await _db.GamePlatforms
+            .Where(gp => gp.GameId == gameId)
+            .Select(gp => gp.PlatformId)
+            .ToListAsync(cancellationToken);
+        var linkedGenreIds = await _db.GameGenres
+            .Where(gg => gg.GameId == gameId)
+            .Select(gg => gg.GenreId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var igdbPlatform in payload.Platforms ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(igdbPlatform.Name) && string.IsNullOrWhiteSpace(igdbPlatform.Abbreviation))
+            {
+                continue;
+            }
+
+            var platform = await ResolveOrCreatePlatformAsync(igdbPlatform, cancellationToken);
+            if (linkedPlatformIds.Contains(platform.Id))
+            {
+                continue;
+            }
+
+            _db.GamePlatforms.Add(new GamePlatformEntity
+            {
+                GameId = gameId,
+                PlatformId = platform.Id,
+            });
+            linkedPlatformIds.Add(platform.Id);
+        }
+
+        foreach (var igdbGenre in payload.Genres ?? [])
+        {
+            if (string.IsNullOrWhiteSpace(igdbGenre.Name))
+            {
+                continue;
+            }
+
+            var genre = await ResolveOrCreateGenreAsync(igdbGenre.Name, cancellationToken);
+            if (linkedGenreIds.Contains(genre.Id))
+            {
+                continue;
+            }
+
+            _db.GameGenres.Add(new GameGenreEntity
+            {
+                GameId = gameId,
+                GenreId = genre.Id,
+            });
+            linkedGenreIds.Add(genre.Id);
+        }
+
+        if ((payload.Platforms?.Count ?? 0) > 0 && linkedPlatformIds.Count == 0)
+        {
+            warnings.Add("No platforms could be linked from IGDB");
+        }
+    }
+
+    private async Task<PlatformEntity> ResolveOrCreatePlatformAsync(
+        IgdbNamed igdbPlatform,
+        CancellationToken cancellationToken)
+    {
+        var name = (igdbPlatform.Name ?? "").Trim();
+        var abbreviation = (igdbPlatform.Abbreviation ?? "").Trim();
+        var slugSource = !string.IsNullOrWhiteSpace(abbreviation) ? abbreviation : name;
+        var slug = Slug.Slugify(slugSource);
+
+        var platforms = await _db.Platforms.ToListAsync(cancellationToken);
+        var match = platforms.FirstOrDefault(p =>
+            (!string.IsNullOrEmpty(slug) && p.Slug == slug)
+            || (!string.IsNullOrEmpty(abbreviation)
+                && p.Abbreviation.Equals(abbreviation, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrEmpty(name) && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrEmpty(name)
+                && name.Contains(p.Name, StringComparison.OrdinalIgnoreCase)
+                && p.Name.Length >= 2)
+            || (!string.IsNullOrEmpty(abbreviation)
+                && p.Name.Contains(abbreviation, StringComparison.OrdinalIgnoreCase)));
+
+        if (match is not null)
+        {
+            return match;
+        }
+
+        if (string.IsNullOrEmpty(slug))
+        {
+            slug = Slug.Slugify(name);
+        }
+
+        if (string.IsNullOrEmpty(slug))
+        {
+            slug = "platform";
+        }
+
+        slug = Slug.UniqueSlug(slug, s => platforms.Any(p => p.Slug == s));
+        var created = new PlatformEntity
+        {
+            Id = Guid.NewGuid(),
+            Slug = slug,
+            Name = string.IsNullOrWhiteSpace(name) ? abbreviation : name,
+            Abbreviation = string.IsNullOrWhiteSpace(abbreviation)
+                ? (name.Length <= 6 ? name.ToUpperInvariant() : slug.ToUpperInvariant())
+                : abbreviation,
+            Family = InferFamily(name, abbreviation),
+            SortOrder = 100 + platforms.Count,
+            CreatedAt = DateTime.UtcNow,
+        };
+        _db.Platforms.Add(created);
+        platforms.Add(created);
+        return created;
+    }
+
+    private async Task<GenreEntity> ResolveOrCreateGenreAsync(string name, CancellationToken cancellationToken)
+    {
+        var trimmed = name.Trim();
+        var slug = Slug.Slugify(trimmed);
+        var existing = await _db.Genres.FirstOrDefaultAsync(
+            g => g.Slug == slug || g.Name.ToLower() == trimmed.ToLower(),
+            cancellationToken);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var created = new GenreEntity
+        {
+            Id = Guid.NewGuid(),
+            Slug = Slug.UniqueSlug(slug, s => _db.Genres.Any(g => g.Slug == s)),
+            Name = trimmed,
+            CreatedAt = DateTime.UtcNow,
+        };
+        _db.Genres.Add(created);
+        return created;
+    }
+
+    private static DbPlatformFamily InferFamily(string name, string abbreviation)
+    {
+        var haystack = $"{name} {abbreviation}".ToLowerInvariant();
+        if (haystack.Contains("playstation", StringComparison.Ordinal)
+            || haystack.Contains("ps vita", StringComparison.Ordinal)
+            || System.Text.RegularExpressions.Regex.IsMatch(haystack, @"\bps[1-5]\b")
+            || haystack.Contains("psp", StringComparison.Ordinal))
+        {
+            return DbPlatformFamily.PLAYSTATION;
+        }
+
+        if (haystack.Contains("xbox", StringComparison.Ordinal))
+        {
+            return DbPlatformFamily.XBOX;
+        }
+
+        if (haystack.Contains("nintendo", StringComparison.Ordinal)
+            || haystack.Contains("switch", StringComparison.Ordinal)
+            || haystack.Contains("wii", StringComparison.Ordinal)
+            || haystack.Contains("gamecube", StringComparison.Ordinal)
+            || haystack.Contains("game boy", StringComparison.Ordinal)
+            || haystack.Contains("n64", StringComparison.Ordinal)
+            || haystack.Contains("3ds", StringComparison.Ordinal)
+            || System.Text.RegularExpressions.Regex.IsMatch(haystack, @"\bds\b"))
+        {
+            return DbPlatformFamily.NINTENDO;
+        }
+
+        if (haystack.Contains("ios", StringComparison.Ordinal)
+            || haystack.Contains("android", StringComparison.Ordinal)
+            || haystack.Contains("mobile", StringComparison.Ordinal))
+        {
+            return DbPlatformFamily.MOBILE;
+        }
+
+        if (haystack.Contains("windows", StringComparison.Ordinal)
+            || haystack.Contains("linux", StringComparison.Ordinal)
+            || haystack.Contains("mac", StringComparison.Ordinal)
+            || System.Text.RegularExpressions.Regex.IsMatch(haystack, @"\bpc\b"))
+        {
+            return DbPlatformFamily.PC;
+        }
+
+        return DbPlatformFamily.OTHER;
     }
 }
 

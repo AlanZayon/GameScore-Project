@@ -595,9 +595,9 @@
   },
   "cookies": {
     "title": "Cookies",
-    "body": "O GameScore usa um cookie de sessão para manter você conectado e um cookie de idioma. A preferência de tema fica só neste navegador.",
+    "body": "Usamos cookies necessários para manter seu login e lembrar o idioma. A preferência de tema fica só neste navegador. Sem cookies de anúncio.",
     "policy": "Política de cookies",
-    "accept": "OK"
+    "accept": "Entendi"
   },
   "legal": {
     "disclaimer": "Este texto é um modelo para o projeto de demonstração GameScore. Não é aconselhamento jurídico. Peça a um advogado para revisar antes de um lançamento público.",

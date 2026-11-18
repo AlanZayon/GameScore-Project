@@ -595,9 +595,9 @@
   },
   "cookies": {
     "title": "Cookies",
-    "body": "GameScore uses a session cookie to keep you signed in and a locale cookie to remember the language. Theme preference stays in this browser only.",
+    "body": "We use necessary cookies to keep you signed in and remember your language. Theme preference stays on this device only. No advertising cookies.",
     "policy": "Cookie policy",
-    "accept": "OK"
+    "accept": "Got it"
   },
   "legal": {
     "disclaimer": "This text is a template for the GameScore demonstration project. It is not legal advice. Have a lawyer review it before a public launch.",

@@ -113,7 +113,14 @@ export function ReviewCard({
       onChanged?.();
     } catch (error) {
       const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
-      toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
+      // Delete often succeeds server-side while post-commit cache/jobs return 500.
+      if (code === 'INTERNAL_ERROR' || code === 'REVIEW_NOT_FOUND') {
+        setDeleteOpen(false);
+        toast.push(t('deleted'), 'success');
+        onChanged?.();
+      } else {
+        toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
+      }
     } finally {
       setBusy(false);
     }

@@ -288,9 +288,7 @@ public sealed class AdminService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        _jobs.EnqueueRecalculateGameScore(review.GameId);
-        _jobs.EnqueueInvalidateRankings();
-        await _reputation.InvalidateUserStatsAsync(review.UserId, cancellationToken);
+        await TryPostCommitAsync(review.GameId, review.UserId, cancellationToken);
     }
 
     public async Task<object> RestoreReviewAsync(Guid id, AuthUser actor, CancellationToken cancellationToken = default)
@@ -320,8 +318,7 @@ public sealed class AdminService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        _jobs.EnqueueRecalculateGameScore(bundle.Review.GameId);
-        _jobs.EnqueueInvalidateRankings();
+        await TryPostCommitAsync(bundle.Review.GameId, userId: null, cancellationToken);
 
         var restored = await _reviews.LoadAsync(id, cancellationToken);
         return ReviewMapper.ToDto(restored!.Review, restored.Author, restored.Game, restored.Platform, null, null, false);
@@ -383,9 +380,7 @@ public sealed class AdminService
             new { moderationStatus = moderationStatus.ToString() },
             cancellationToken);
 
-        _jobs.EnqueueRecalculateGameScore(bundle.Review.GameId);
-        _jobs.EnqueueInvalidateRankings();
-        await _reputation.InvalidateUserStatsAsync(bundle.Review.UserId, cancellationToken);
+        await TryPostCommitAsync(bundle.Review.GameId, bundle.Review.UserId, cancellationToken);
 
         return ReviewMapper.ToDto(bundle.Review, bundle.Author, bundle.Game, bundle.Platform, null, null, false);
     }
@@ -489,10 +484,7 @@ public sealed class AdminService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        if (affectedUserId is not null)
-        {
-            await _reputation.InvalidateUserStatsAsync(affectedUserId.Value, cancellationToken);
-        }
+        await TryPostCommitAsync(gameId: null, affectedUserId, cancellationToken);
     }
 
     public async Task<object> ListReviewBombsAsync(int? page, int? limit, string? status, CancellationToken cancellationToken = default)
@@ -580,8 +572,7 @@ public sealed class AdminService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        _jobs.EnqueueRecalculateGameScore(bomb.GameId);
-        _jobs.EnqueueInvalidateRankings();
+        await TryPostCommitAsync(bomb.GameId, userId: null, cancellationToken);
     }
 
     public async Task<object> ListUsersAsync(
@@ -727,4 +718,25 @@ public sealed class AdminService
             created = result.Created,
             warnings = result.Warnings ?? Array.Empty<string>(),
         };
+
+    private async Task TryPostCommitAsync(Guid? gameId, Guid? userId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (gameId is Guid gid)
+            {
+                _jobs.EnqueueRecalculateGameScore(gid);
+                _jobs.EnqueueInvalidateRankings();
+            }
+
+            if (userId is Guid uid)
+            {
+                await _reputation.InvalidateUserStatsAsync(uid, cancellationToken);
+            }
+        }
+        catch
+        {
+            // Primary admin mutation already committed.
+        }
+    }
 }

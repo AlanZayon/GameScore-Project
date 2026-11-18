@@ -289,19 +289,41 @@ public sealed class ReviewsService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        _jobs.EnqueueRecalculateGameScore(review.GameId);
-        _jobs.EnqueueInvalidateRankings();
-        await _reputation.InvalidateUserStatsAsync(userId, cancellationToken);
+        await RunPostCommitSideEffectsAsync(review.GameId, userId, cancellationToken);
 
-        return (await MapManyAsync([await _reviews.LoadAsync(id, cancellationToken)!], userId, cancellationToken))[0];
+        try
+        {
+            var updated = await _reviews.LoadAsync(id, cancellationToken);
+            if (updated is not null)
+            {
+                return (await MapManyAsync([updated], userId, cancellationToken))[0];
+            }
+        }
+        catch
+        {
+            // Fall through — the edit is already saved.
+        }
+
+        return ReviewMapper.ToDto(review, bundle.Author, bundle.Game, bundle.Platform, userId);
     }
 
     public async Task SoftDeleteAsync(Guid id, Guid userId, string? reason, CancellationToken cancellationToken = default)
     {
         var bundle = await _reviews.LoadTrackedAsync(id, cancellationToken);
-        if (bundle is null || bundle.Review.DeletedAt is not null)
+        // Idempotent DELETE: a false 500 after commit must not look like failure on retry.
+        if (bundle is null)
         {
-            throw new NotFoundException(ErrorCodes.ReviewNotFound, "Review not found");
+            return;
+        }
+
+        if (bundle.Review.DeletedAt is not null)
+        {
+            if (bundle.Review.UserId != userId)
+            {
+                throw new ForbiddenException(ErrorCodes.ReviewNotOwned, "You can only delete your own reviews");
+            }
+
+            return;
         }
 
         if (bundle.Review.UserId != userId)
@@ -325,13 +347,13 @@ public sealed class ReviewsService
             await _scores.BumpDailyActivityAsync(review.GameId, review.Recommended, review.CreatedAt, -1, cancellationToken);
         }
 
+        // Persist soft-delete before recalculating so CountAsync excludes this review.
+        await _db.SaveChangesAsync(cancellationToken);
         await _scores.RecalculateInsideAsync(review.GameId, true, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        _jobs.EnqueueRecalculateGameScore(review.GameId);
-        _jobs.EnqueueInvalidateRankings();
-        await _reputation.InvalidateUserStatsAsync(review.UserId, cancellationToken);
+        await RunPostCommitSideEffectsAsync(review.GameId, review.UserId, cancellationToken);
     }
 
     public async Task<object> VoteAsync(Guid id, bool useful, Guid voterId, CancellationToken cancellationToken = default)
@@ -407,7 +429,7 @@ public sealed class ReviewsService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        await _reputation.InvalidateUserStatsAsync(review.UserId, cancellationToken);
+        await RunPostCommitSideEffectsAsync(gameId: null, review.UserId, cancellationToken);
         return VoteResponse(review, useful);
     }
 
@@ -416,7 +438,20 @@ public sealed class ReviewsService
         var existing = await _db.ReviewVotes.FirstOrDefaultAsync(v => v.ReviewId == id && v.UserId == voterId, cancellationToken);
         if (existing is null)
         {
-            throw new NotFoundException(ErrorCodes.VoteNotFound, "You have not voted on this review");
+            // Idempotent: vote already removed after a false 500.
+            var reviewOnly = await _db.Reviews.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+            if (reviewOnly is null)
+            {
+                throw new NotFoundException(ErrorCodes.VoteNotFound, "You have not voted on this review");
+            }
+
+            return new
+            {
+                reviewId = id,
+                usefulCount = reviewOnly.UsefulCount,
+                notUsefulCount = reviewOnly.NotUsefulCount,
+                viewerVote = (string?)null,
+            };
         }
 
         var review = await _db.Reviews.FirstAsync(r => r.Id == id, cancellationToken);
@@ -437,7 +472,7 @@ public sealed class ReviewsService
         review.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
-        await _reputation.InvalidateUserStatsAsync(review.UserId, cancellationToken);
+        await RunPostCommitSideEffectsAsync(gameId: null, review.UserId, cancellationToken);
 
         return new
         {
@@ -558,22 +593,12 @@ public sealed class ReviewsService
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        // Post-commit side effects must not turn a successful publish into HTTP 500.
-        try
-        {
-            if (!holdForModeration)
-            {
-                _jobs.EnqueueDetectReviewBomb(gameId.Value, DateHelpers.IsoDate(now));
-            }
-
-            _jobs.EnqueueRecalculateGameScore(gameId.Value);
-            _jobs.EnqueueInvalidateRankings();
-            await _reputation.InvalidateUserStatsAsync(userId, cancellationToken);
-        }
-        catch
-        {
-            // Review is already durable; background/cache failures are recoverable.
-        }
+        await RunPostCommitSideEffectsAsync(
+            gameId.Value,
+            userId,
+            cancellationToken,
+            detectReviewBomb: !holdForModeration,
+            bombAt: now);
 
         try
         {
@@ -590,6 +615,40 @@ public sealed class ReviewsService
 
         var game = await _db.Games.AsNoTracking().FirstAsync(g => g.Id == gameId.Value, cancellationToken);
         return ReviewMapper.ToDto(review, author, game, null, userId);
+    }
+
+    /// <summary>
+    /// Hangfire/Redis/cache work after a durable commit. Must never convert success into HTTP 500.
+    /// </summary>
+    private async Task RunPostCommitSideEffectsAsync(
+        Guid? gameId,
+        Guid? userId,
+        CancellationToken cancellationToken,
+        bool detectReviewBomb = false,
+        DateTime? bombAt = null)
+    {
+        try
+        {
+            if (gameId is Guid gid)
+            {
+                if (detectReviewBomb && bombAt is DateTime at)
+                {
+                    _jobs.EnqueueDetectReviewBomb(gid, DateHelpers.IsoDate(at));
+                }
+
+                _jobs.EnqueueRecalculateGameScore(gid);
+                _jobs.EnqueueInvalidateRankings();
+            }
+
+            if (userId is Guid uid)
+            {
+                await _reputation.InvalidateUserStatsAsync(uid, cancellationToken);
+            }
+        }
+        catch
+        {
+            // Recoverable; the primary mutation already committed.
+        }
     }
 
     private async Task AssertImportQuotaAsync(Guid userId, CancellationToken cancellationToken)

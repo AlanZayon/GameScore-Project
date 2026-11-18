@@ -3,6 +3,7 @@ using GameScore.Infrastructure.Rankings;
 using GameScore.Infrastructure.Ratings;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace GameScore.Infrastructure.Jobs;
 
@@ -16,25 +17,44 @@ public static class JobNames
     public const string InvalidateRankings = "rankings.invalidate";
 }
 
-public sealed class BackgroundJobScheduler(IBackgroundJobClient jobs)
+public sealed class BackgroundJobScheduler(IBackgroundJobClient jobs, ILogger<BackgroundJobScheduler> logger)
 {
     public void EnqueueRecalculateGameScore(Guid gameId) =>
-        jobs.Enqueue<BackgroundJobRunner>(r => r.RecalculateGameScoreAsync(gameId, CancellationToken.None));
+        TryEnqueue(JobNames.RecalculateGameScore, () =>
+            jobs.Enqueue<BackgroundJobRunner>(r => r.RecalculateGameScoreAsync(gameId, CancellationToken.None)));
 
     public void EnqueueDetectReviewBomb(Guid gameId, string dateIso) =>
-        jobs.Enqueue<BackgroundJobRunner>(r => r.DetectReviewBombAsync(gameId, dateIso, CancellationToken.None));
+        TryEnqueue(JobNames.DetectReviewBomb, () =>
+            jobs.Enqueue<BackgroundJobRunner>(r => r.DetectReviewBombAsync(gameId, dateIso, CancellationToken.None)));
 
     public void EnqueueRecordGameView(Guid gameId) =>
-        jobs.Enqueue<BackgroundJobRunner>(r => r.RecordGameViewAsync(gameId, CancellationToken.None));
+        TryEnqueue(JobNames.RecordGameView, () =>
+            jobs.Enqueue<BackgroundJobRunner>(r => r.RecordGameViewAsync(gameId, CancellationToken.None)));
 
     public void EnqueueInvalidateRankings() =>
-        jobs.Enqueue<BackgroundJobRunner>(r => r.InvalidateRankingsAsync(CancellationToken.None));
+        TryEnqueue(JobNames.InvalidateRankings, () =>
+            jobs.Enqueue<BackgroundJobRunner>(r => r.InvalidateRankingsAsync(CancellationToken.None)));
 
     public void EnqueueSnapshotScores() =>
-        jobs.Enqueue<BackgroundJobRunner>(r => r.SnapshotScoresAsync(CancellationToken.None));
+        TryEnqueue(JobNames.SnapshotScores, () =>
+            jobs.Enqueue<BackgroundJobRunner>(r => r.SnapshotScoresAsync(CancellationToken.None)));
 
     public void EnqueueMaintenance() =>
-        jobs.Enqueue<BackgroundJobRunner>(r => r.MaintenanceAsync(CancellationToken.None));
+        TryEnqueue(JobNames.Maintenance, () =>
+            jobs.Enqueue<BackgroundJobRunner>(r => r.MaintenanceAsync(CancellationToken.None)));
+
+    private void TryEnqueue(string jobName, Action enqueue)
+    {
+        try
+        {
+            enqueue();
+        }
+        catch (Exception ex)
+        {
+            // Never fail an already-committed HTTP request because Hangfire/Redis is down.
+            logger.LogWarning(ex, "Failed to enqueue background job {JobName}", jobName);
+        }
+    }
 }
 
 public sealed class BackgroundJobRunner

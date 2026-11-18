@@ -16,7 +16,7 @@ import type { CursorPaginatedResponse, GameDetailDto, GameStatisticsDto, ReviewD
 
 const loadGame = cache(async (slug: string) => {
   try {
-    return await apiFetch<GameDetailDto>(`/games/${slug}`);
+    return await apiFetch<GameDetailDto>(`/games/${slug}`, { revalidate: false });
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;
@@ -64,8 +64,10 @@ export default async function GamePage({
   if (!game) notFound();
 
   const [stats, reviews] = await Promise.all([
-    apiFetch<GameStatisticsDto>(`/games/${slug}/statistics`),
-    apiFetch<CursorPaginatedResponse<ReviewDto>>(`/games/${slug}/reviews?limit=20&sort=BEST`),
+    apiFetch<GameStatisticsDto>(`/games/${slug}/statistics`, { revalidate: false }),
+    apiFetch<CursorPaginatedResponse<ReviewDto>>(`/games/${slug}/reviews?limit=20&sort=BEST`, {
+      revalidate: false,
+    }),
   ]);
 
   const cover = resolveCoverImageUrl(game.name, game.coverImageUrl);

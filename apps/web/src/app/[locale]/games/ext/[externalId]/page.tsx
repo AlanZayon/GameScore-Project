@@ -12,7 +12,10 @@ import type { ExternalGamePreviewDto, PlatformDto } from '@gamescore/types';
 
 const loadPreview = cache(async (externalId: string) => {
   try {
-    return await apiFetch<ExternalGamePreviewDto>(`/search/external/${externalId}`);
+    // Never cache: once the first review imports the game, localSlug must appear immediately.
+    return await apiFetch<ExternalGamePreviewDto>(`/search/external/${externalId}`, {
+      revalidate: false,
+    });
   } catch (error) {
     if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
     throw error;

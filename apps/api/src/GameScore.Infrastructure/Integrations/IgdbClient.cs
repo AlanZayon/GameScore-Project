@@ -504,16 +504,12 @@ public sealed class GameImportService
         var slug = Slug.Slugify(slugSource);
 
         var platforms = await _db.Platforms.ToListAsync(cancellationToken);
+        // Exact matches only — "Nintendo Switch 2".Contains("Nintendo Switch") must not win.
         var match = platforms.FirstOrDefault(p =>
             (!string.IsNullOrEmpty(slug) && p.Slug == slug)
             || (!string.IsNullOrEmpty(abbreviation)
                 && p.Abbreviation.Equals(abbreviation, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrEmpty(name) && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-            || (!string.IsNullOrEmpty(name)
-                && name.Contains(p.Name, StringComparison.OrdinalIgnoreCase)
-                && p.Name.Length >= 2)
-            || (!string.IsNullOrEmpty(abbreviation)
-                && p.Name.Contains(abbreviation, StringComparison.OrdinalIgnoreCase)));
+            || (!string.IsNullOrEmpty(name) && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
 
         if (match is not null)
         {

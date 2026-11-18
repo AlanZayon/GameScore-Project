@@ -4,6 +4,7 @@ using GameScore.Application.Http;
 using GameScore.Domain.Scoring;
 using GameScore.Infrastructure.Jobs;
 using GameScore.Infrastructure.Persistence;
+using GameScore.Infrastructure.Ratings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -14,12 +15,18 @@ public sealed class GamesService
     private readonly GameScoreDbContext _db;
     private readonly AppConfig _config;
     private readonly BackgroundJobScheduler _jobs;
+    private readonly ScoreRecalculationService _scores;
 
-    public GamesService(GameScoreDbContext db, IOptions<AppConfig> config, BackgroundJobScheduler jobs)
+    public GamesService(
+        GameScoreDbContext db,
+        IOptions<AppConfig> config,
+        BackgroundJobScheduler jobs,
+        ScoreRecalculationService scores)
     {
         _db = db;
         _config = config.Value;
         _jobs = jobs;
+        _scores = scores;
     }
 
     public async Task<object> ListAsync(
@@ -84,6 +91,8 @@ public sealed class GamesService
             throw new NotFoundException(ErrorCodes.GameNotFound, "Game not found");
         }
 
+        game = await HealStaleScoreAsync(game, cancellationToken);
+
         Guid? viewerReviewId = null;
         if (viewerId is not null)
         {
@@ -129,6 +138,35 @@ public sealed class GamesService
                 r.CoverImageUrl,
                 r.ReleaseDate?.ToString("yyyy-MM-dd"),
                 r.RelatedGameId is null ? null : relatedSlugs.GetValueOrDefault(r.RelatedGameId.Value))).ToList());
+    }
+
+    /// <summary>
+    /// Older creates recalculated scores before SaveChanges, leaving TotalReviews=0
+    /// while published reviews exist. Repair on read.
+    /// </summary>
+    private async Task<GameEntity> HealStaleScoreAsync(GameEntity game, CancellationToken cancellationToken)
+    {
+        var publishedCount = await _db.Reviews.CountAsync(
+            r =>
+                r.GameId == game.Id
+                && r.DeletedAt == null
+                && r.Status == DbReviewStatus.PUBLISHED
+                && r.ModerationStatus != DbReviewModerationStatus.MODERATION_REQUIRED,
+            cancellationToken);
+
+        if ((game.Statistics?.TotalReviews ?? 0) == publishedCount)
+        {
+            return game;
+        }
+
+        await _scores.RecalculateAsync(game.Id, includePlatforms: true, cancellationToken);
+        return await _db.Games
+            .AsNoTracking()
+            .Include(g => g.Statistics)
+            .Include(g => g.Platforms).ThenInclude(gp => gp.Platform)
+            .Include(g => g.Genres).ThenInclude(gg => gg.Genre)
+            .Include(g => g.ExternalSources)
+            .FirstAsync(g => g.Id == game.Id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<object>> ListPlatformsAsync(CancellationToken cancellationToken = default)

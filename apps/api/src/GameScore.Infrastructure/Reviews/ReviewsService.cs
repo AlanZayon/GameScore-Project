@@ -248,6 +248,7 @@ public sealed class ReviewsService
             await _scores.BumpDailyActivityAsync(review.GameId, nextRecommended, review.CreatedAt, 1, cancellationToken);
         }
 
+        await _db.SaveChangesAsync(cancellationToken);
         await _scores.RecalculateInsideAsync(review.GameId, includePlatforms: true, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
@@ -514,6 +515,8 @@ public sealed class ReviewsService
             await _scores.BumpDailyActivityAsync(gameId.Value, recommended, now, 1, cancellationToken);
         }
 
+        // Persist the review before recalculating — CountAsync only sees committed rows.
+        await _db.SaveChangesAsync(cancellationToken);
         await _scores.RecalculateInsideAsync(gameId.Value, true, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);

@@ -86,7 +86,8 @@ export function ReviewForm({
       onSaved(review);
     } catch (error) {
       const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
-      toast.push(errors.has(code) ? errors(code) : errors('INTERNAL_ERROR'), 'error');
+      const fallback = error instanceof ApiError && error.message ? error.message : errors('INTERNAL_ERROR');
+      toast.push(errors.has(code) ? errors(code) : fallback, 'error');
     }
   }
 

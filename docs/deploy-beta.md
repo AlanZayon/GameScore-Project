@@ -64,7 +64,7 @@ Import the **repo root** (not `apps/web`). [`vercel.json`](../vercel.json) runs 
 
 ### Session cookies (required on custom domains)
 
-Browsers treat `gamesscore.com.br` → `*.onrender.com` as **third-party** cookies, so login works until refresh and then the session vanishes. Proxy the browser API through the same origin:
+Browsers treat `gamesscore.com.br` → `*.onrender.com` as **third-party** cookies, so login works until refresh and then the session vanishes. The web app proxies the browser API through same-origin `/api/*` (Next route handler) and rewrites the refresh cookie to `SameSite=Lax`:
 
 | Variable | Value |
 |----------|--------|

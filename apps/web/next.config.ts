@@ -73,18 +73,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
-  async rewrites() {
-    // Browser → https://www.gamesscore.com.br/api/... → Render, so Set-Cookie is first-party.
-    if (!apiRewriteTarget) {
-      return [];
-    }
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiRewriteTarget}/:path*`,
-      },
-    ];
-  },
+  // Auth cookies are proxied by apps/web/src/app/api/[...path]/route.ts (not rewrites),
+  // so Set-Cookie can be rewritten to first-party SameSite=Lax on the web origin.
 };
 
 export default withNextIntl(nextConfig);

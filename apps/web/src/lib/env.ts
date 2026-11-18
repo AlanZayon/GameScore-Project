@@ -15,6 +15,10 @@ export const serverEnv = {
   /**
    * API URL used for server-side rendering. Inside docker compose the browser
    * and the server reach the API through different hostnames.
+   * Must be absolute (never the browser `/api` proxy path).
    */
-  internalApiUrl: process.env.API_INTERNAL_URL ?? publicEnv.apiUrl,
+  internalApiUrl:
+    process.env.API_INTERNAL_URL ||
+    process.env.API_REWRITE_TARGET ||
+    (publicEnv.apiUrl.startsWith('http') ? publicEnv.apiUrl : 'http://localhost:3001'),
 } as const;

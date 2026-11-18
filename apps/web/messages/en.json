@@ -229,6 +229,7 @@
     "identifier": "Email or username",
     "email": "Email",
     "username": "Username",
+    "usernameHint": "3–30 characters: lowercase letters, numbers, and underscores only (e.g. alan_zayon).",
     "displayName": "Display name",
     "password": "Password",
     "passwordHint": "At least 8 characters, including a letter and a number.",

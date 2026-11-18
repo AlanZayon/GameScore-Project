@@ -70,10 +70,17 @@ export default function RegisterPage() {
           <Input
             id="username"
             value={username}
-            onChange={(event) => setUsername(event.target.value)}
+            onChange={(event) => setUsername(event.target.value.toLowerCase())}
             required
+            minLength={3}
+            maxLength={30}
+            pattern="[a-z0-9_]{3,30}"
+            title={t('usernameHint')}
             autoComplete="username"
+            autoCapitalize="off"
+            spellCheck={false}
           />
+          <p className="mt-1 text-xs text-content-subtle">{t('usernameHint')}</p>
         </div>
         <div>
           <Label htmlFor="displayName">{t('displayName')}</Label>

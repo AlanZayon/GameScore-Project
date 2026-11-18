@@ -55,6 +55,7 @@ public sealed class AuthService
 
         email = email.Trim().ToLowerInvariant();
         username = username.Trim().ToLowerInvariant();
+        UsernameRules.EnsureValid(username);
 
         if (await _db.Users.AnyAsync(u => u.Email == email, cancellationToken))
         {

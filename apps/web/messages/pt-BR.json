@@ -229,6 +229,7 @@
     "identifier": "E-mail ou usuário",
     "email": "E-mail",
     "username": "Usuário",
+    "usernameHint": "3–30 caracteres: só letras minúsculas, números e underscore (ex.: alan_zayon).",
     "displayName": "Nome de exibição",
     "password": "Senha",
     "passwordHint": "Pelo menos 8 caracteres, com letra e número.",

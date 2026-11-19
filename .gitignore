@@ -27,6 +27,13 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.cursor/
+.agents/
 
 .eslintcache
 .turbo/
+
+# engineering-video-generator (Remotion isolated outputs)
+.engineering-video/videos/**/node_modules/
+.engineering-video/videos/**/out/
+.engineering-video/videos/**/.remotion/

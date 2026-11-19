@@ -232,4 +232,4 @@ bash scripts/setup-beta-wizard.sh
 
 ## Licença
 
-Projeto de demonstração, fornecido como está.
+MIT — ver [LICENSE](LICENSE).

@@ -110,7 +110,7 @@ Browser ──► Next.js (SSR catálogo + UI autenticada)
 
 Módulos principais: `auth`, `users`, `games`, `search`, `reviews`, `ratings`, `rankings`, `admin`, `integrations`.
 
-Mais detalhes: [docs/architecture.md](docs/architecture.md).
+Decisões (por quê monólito, Prisma+EF, Wilson, Redis opcional, IGDB sob demanda, etc.): [docs/architecture.md](docs/architecture.md) · [EN](docs/en/architecture.md).
 
 ---
 
@@ -125,7 +125,7 @@ packages/
   types/               Contrato HTTP compartilhado (API ↔ web)
   config/              Presets TypeScript / ESLint
 infrastructure/docker/ Dockerfiles
-docs/                  Arquitetura, banco, API, scoring, desenvolvimento, deploy
+docs/                  Documentação canônica em português (+ docs/en/)
 scripts/               Utilitários (ex.: wizard de beta)
 ```
 
@@ -216,15 +216,17 @@ bash scripts/setup-beta-wizard.sh
 
 ## Documentação
 
-| Documento | Conteúdo |
-| --------- | -------- |
-| [docs/architecture.md](docs/architecture.md) | Módulos, camadas, fluxo de request, jobs, cache |
-| [docs/database.md](docs/database.md) | Schema, constraints, índices, dados derivados |
-| [docs/scoring.md](docs/scoring.md) | Matemática Wilson, labels, ranking de reviews, reputação, bombs |
-| [docs/api.md](docs/api.md) | Endpoints e códigos de erro |
-| [docs/development.md](docs/development.md) | Env, IGDB, testes, checklist de aceitação |
-| [docs/deploy-beta.md](docs/deploy-beta.md) | Vercel + Render + Neon |
-| [docs/design/DESIGN_SYSTEM.md](docs/design/DESIGN_SYSTEM.md) | Design system Evidence (tokens, tipografia, hierarquia da nota) |
+Índice: [docs/README.md](docs/README.md) (**português**, canônico) · [docs/en/README.md](docs/en/README.md) (English mirror).
+
+| Documento (PT) | English | Conteúdo |
+| -------------- | ------- | -------- |
+| [architecture.md](docs/architecture.md) | [EN](docs/en/architecture.md) | Módulos, fluxo de request e **decisões** (D1–D10) |
+| [database.md](docs/database.md) | [EN](docs/en/database.md) | Schema, constraints, índices, dados derivados |
+| [scoring.md](docs/scoring.md) | [EN](docs/en/scoring.md) | Wilson, labels, ranking de reviews, reputação, bombs |
+| [api.md](docs/api.md) | [EN](docs/en/api.md) | Endpoints e códigos de erro |
+| [development.md](docs/development.md) | [EN](docs/en/development.md) | Env, IGDB, testes, checklist de aceitação |
+| [deploy-beta.md](docs/deploy-beta.md) | [EN](docs/en/deploy-beta.md) | Vercel + Render + Neon |
+| [design/DESIGN_SYSTEM.md](docs/design/DESIGN_SYSTEM.md) | [EN](docs/en/design/DESIGN_SYSTEM.md) | Design system Evidence |
 
 ---
 

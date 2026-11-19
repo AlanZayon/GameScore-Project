@@ -1,32 +1,34 @@
 # Scoring
 
-The public number is the **positive percentage** of recommendations. Ranking uses the **Wilson score lower bound** of that proportion at 95% confidence (`z = 1.959964`).
+**Idioma:** [Português](./scoring.md) · [English](./en/scoring.md)
 
-```
+O número público é o **percentual positivo** de recomendações. O ranking usa o **limite inferior do intervalo de Wilson** dessa proporção a 95% de confiança (`z = 1.959964`).
+
+```text
 p = pos / n
 lower = (p + z²/(2n) - z * sqrt((p(1-p) + z²/(4n)) / n)) / (1 + z²/n)
 ```
 
-`n = 0` returns 0. `confidenceScore` is that bound normalised to 0–100.
+`n = 0` retorna 0. `confidenceScore` é esse bound normalizado para 0–100.
 
-That is why 10/10 does not outrank 9500/10000, and why Top Rated requires `RANKING_MINIMUM_REVIEWS` (default 50).
+Por isso 10/10 **não** supera 9500/10000 no ranking, e o Top Rated exige `RANKING_MINIMUM_REVIEWS` (padrão: 50).
 
 ## Labels
 
-Labels are stable codes (`VERY_POSITIVE`, `MIXED`, `FEW_REVIEWS`, …) returned by the API and translated in the UI. Fewer than 10 reviews always yield `FEW_REVIEWS`. `OVERWHELMINGLY_POSITIVE` additionally needs 200 reviews and ≥ 95% positive.
+Labels são códigos estáveis (`VERY_POSITIVE`, `MIXED`, `FEW_REVIEWS`, …) devolvidos pela API e traduzidos na UI. Menos de 10 reviews sempre geram `FEW_REVIEWS`. `OVERWHELMINGLY_POSITIVE` exige ainda 200 reviews e ≥ 95% positivo.
 
-## Review ranking
+## Ranking de reviews
 
-A review's list position mixes Wilson usefulness, vote volume, capped author reputation, text/context quality and a mild recency term. No term can dominate.
+A posição de uma review na lista mistura Wilson de utilidade, volume de votos, reputação do autor (com teto), qualidade de texto/contexto e um termo leve de recência. Nenhum termo pode dominar sozinho.
 
-## Reputation
+## Reputação
 
-Deltas are recorded as `ReputationEvent` rows and clamped to 0–5000. Useful votes, published reviews, moderator removals and confirmed abuse all leave an audit trail.
+Deltas são gravados como linhas `ReputationEvent` e limitados a 0–5000. Votos úteis, reviews publicadas, remoções de moderador e abuso confirmado deixam trilha de auditoria.
 
-Public profiles expose a **tier** derived from the current score (translated in the UI):
+Perfis públicos expõem um **tier** derivado do score atual (traduzido na UI):
 
 | Tier | Score |
-| --- | --- |
+| ---- | ----- |
 | `NEWCOMER` | 0–49 |
 | `ACTIVE` | 50–199 |
 | `TRUSTED` | 200–499 |
@@ -34,10 +36,10 @@ Public profiles expose a **tier** derived from the current score (translated in 
 | `RESPECTED` | 1500–2999 |
 | `ELITE` | 3000–5000 |
 
-The public reputation ledger shows reason, delta and date. Moderator removals and confirmed abuse are visible only to moderators/admins; visitors see a single opaque `moderationNet` adjustment when those events affect the score.
+O ledger público mostra motivo, delta e data. Remoções de moderador e abuso confirmado são visíveis só para moderadores/admins; visitantes veem um ajuste opaco `moderationNet` quando esses eventos afetam o score.
 
-Profile analytics (genre/platform breakdowns, timelines, hours) use only `PUBLISHED` non-deleted reviews, count a review in every genre of its game, put missing platforms in an `unspecified` bucket, and hide category buckets with fewer than 3 reviews.
+Analytics de perfil (gêneros/plataformas, timelines, horas) usam só reviews `PUBLISHED` não deletadas, contam a review em cada gênero do jogo, colocam plataforma ausente em `unspecified` e escondem buckets com menos de 3 reviews.
 
 ## Review bombs
 
-Detection compares one day against the game's own 30-day median volume. A spike that is both large and one-sided writes a `ReviewBombEvent`. Nothing is deleted automatically; a moderator confirms or dismisses the window. Confirmed windows are excluded from the alternate statistics payload.
+A detecção compara um dia com a mediana de volume de 30 dias **do próprio jogo**. Um pico grande e unilateral grava um `ReviewBombEvent`. Nada é apagado automaticamente; um moderador confirma ou descarta a janela. Janelas confirmadas são excluídas do payload de estatísticas alternativas.

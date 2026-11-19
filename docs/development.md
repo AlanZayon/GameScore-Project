@@ -1,6 +1,8 @@
-# Development
+# Desenvolvimento
 
-## Prerequisites
+**Idioma:** [Português](./development.md) · [English](./en/development.md)
+
+## Pré-requisitos
 
 - Node 20.11+
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -12,9 +14,9 @@ corepack enable
 corepack prepare pnpm@11.21.0 --activate
 ```
 
-On Windows, restart the terminal after enabling Corepack so `pnpm` is on `PATH`. Until then, prefix commands with `corepack` (`corepack pnpm install`, `corepack pnpm dev`, …).
+No Windows, reinicie o terminal depois de habilitar o Corepack para o `pnpm` entrar no `PATH`. Até lá, prefixe com `corepack` (`corepack pnpm install`, `corepack pnpm dev`, …).
 
-## First run
+## Primeira execução
 
 ```bash
 cp .env.example .env
@@ -25,21 +27,21 @@ pnpm db:seed
 pnpm dev
 ```
 
-Day to day, Postgres, Redis and Mailpit run in Docker. The API (port 3001, ASP.NET) and web app (port 3000, Next.js) run on the host. Open http://localhost:8025 to read emails sent by password reset and email confirmation.
+No dia a dia, Postgres, Redis e Mailpit rodam no Docker. A API (porta 3001, ASP.NET) e a web (porta 3000, Next.js) rodam no host. Abra http://localhost:8025 para ler e-mails de reset de senha e confirmação.
 
-API-only:
+Só a API:
 
 ```bash
 pnpm --filter @gamescore/api dev
-# or
+# ou
 dotnet run --project apps/api/src/GameScore.Api
 ```
 
-## Tests
+## Testes
 
 ```bash
-pnpm test          # web + API (dotnet test for API domain/smoke)
-pnpm test:api      # GameScore.slnx tests
+pnpm test          # web + API (dotnet test para domain/smoke da API)
+pnpm test:api      # testes do GameScore.slnx
 pnpm lint
 pnpm typecheck
 pnpm build
@@ -47,13 +49,13 @@ pnpm build
 
 ## IGDB
 
-Create an application at https://dev.twitch.tv/console/apps and set `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` in `.env`. Leave them empty to keep the rest of the app working; only IGDB-backed search fallback and import are disabled.
+Crie um app em https://dev.twitch.tv/console/apps e defina `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` no `.env`. Deixe vazios para o restante da app funcionar; só o fallback/import IGDB ficam desligados.
 
-### Demand-driven catalogue growth
+### Crescimento do catálogo sob demanda
 
-Search and autocomplete hit Postgres first. When local results are thin (fewer than 3 on page 1) and IGDB is configured, the API also returns `externalItems` from IGDB. Opening a title goes to `/games/ext/:externalId` (preview only — nothing is written yet). The game is imported into Postgres on the **first published review** via `POST /games/external/:externalId/reviews`.
+Busca e autocomplete consultam o Postgres primeiro. Quando o resultado local é fino (menos de 3 na página 1) e a IGDB está configurada, a API também devolve `externalItems`. Abrir um título vai para `/games/ext/:externalId` (só preview — nada é gravado ainda). O jogo é importado no Postgres na **primeira review publicada** via `POST /games/external/:externalId/reviews`.
 
-A bulk/admin import can still be verified from `/admin` (Import tab) or:
+Import em massa/admin ainda pode ser verificado em `/admin` (aba Import) ou:
 
 ```http
 POST /admin/games/import
@@ -61,35 +63,35 @@ Authorization: Bearer <admin access token>
 { "externalId": "1942" }
 ```
 
-The client caches the Twitch OAuth token and limits itself to 4 requests per second. Imports are idempotent on `(provider, externalId)`. Fields listed in `Game.editedFields` are never overwritten by a later sync.
+O cliente cacheia o OAuth da Twitch e se limita a 4 requests por segundo. Imports são idempotentes em `(provider, externalId)`. Campos listados em `Game.editedFields` nunca são sobrescritos por um sync posterior.
 
-## Seed accounts
+## Contas do seed
 
-All use password `Password123!`:
+Todas usam a senha `Password123!`:
 
 - `admin@gamescore.dev`
 - `moderator@gamescore.dev`
 - `player1@gamescore.dev` …
 
-## Beta hosting
+## Hosting beta
 
-For a public sample without a custom domain (Vercel web + Render API + Neon Postgres), see [deploy-beta.md](./deploy-beta.md). That guide covers cross-origin refresh cookies, CORS, JWT secrets, SMTP, and the smoke checklist.
+Para um sample público sem domínio customizado (Vercel web + Render API + Neon Postgres), veja [deploy-beta.md](./deploy-beta.md). O guia cobre cookies de refresh cross-origin, CORS, secrets JWT, SMTP e o checklist de smoke.
 
-## Acceptance checklist
+## Checklist de aceitação
 
-Walk this list against a running `pnpm dev` after `pnpm db:seed`:
+Percorra esta lista com `pnpm dev` após `pnpm db:seed`:
 
-1. Home shows popular, top rated, new releases and trending sections with seeded games.
-2. Catalogue filters by platform and genre and keeps both filters in the URL.
-3. Search autocomplete and `/search?q=` return matching local games (with covers); with IGDB configured, thin local results also show external hits that open a preview page and only import on the first review.
-4. Game page at `/games/<slug>` is SSR, has canonical + hreflang, OpenGraph tags, score panel, platform breakdown and reviews.
-5. Portuguese URLs have no locale prefix (`/games/elden-ring`); English is `/en/games/elden-ring`.
-6. Register, login, refresh (reload the page still authenticated) and logout work. Access token is not in localStorage. Registration requires accepting terms; a confirmation email appears in Mailpit.
-7. A signed-in user with a **verified email** can create, edit and soft-delete a review; cannot review the same game twice. Unverified accounts get `EMAIL_NOT_VERIFIED`.
-8. Helpfulness votes work; self-vote is rejected. Reports can be submitted.
-9. A 10/10 game does not outrank a 9500/10000 game on Top Rated (Wilson `confidenceScore`, minimum 50 reviews).
-10. Rankings tabs load: top rated, trending, new releases, popular.
-11. Profile page shows reputation, evaluator analytics (when there are enough reviews), and the user's reviews.
-12. Dark theme is the default; the header toggle switches to light and back.
-13. Admin (`admin@gamescore.dev`) can list games, edit a game, remove/restore a review, resolve reports, confirm a review bomb, suspend a user and see the dashboard.
-14. Moderator (`moderator@gamescore.dev`) can moderate reviews/reports/bombs, list and suspend users, but cannot list games or import from IGDB.
+1. A home mostra seções de populares, top rated, lançamentos e trending com jogos do seed.
+2. O catálogo filtra por plataforma e gênero e mantém os dois filtros na URL.
+3. Autocomplete e `/search?q=` devolvem jogos locais (com capas); com IGDB configurada, resultados locais finos também mostram hits externos que abrem preview e só importam na primeira review.
+4. A página `/games/<slug>` é SSR, tem canonical + hreflang, OpenGraph, painel de nota, breakdown por plataforma e reviews.
+5. URLs em português não têm prefixo de locale (`/games/elden-ring`); inglês é `/en/games/elden-ring`.
+6. Registro, login, refresh (reload ainda autenticado) e logout funcionam. Access token não está no localStorage. Registro exige aceitar termos; e-mail de confirmação aparece no Mailpit.
+7. Usuário autenticado com **e-mail verificado** cria, edita e soft-deleta review; não pode avaliar o mesmo jogo duas vezes. Contas não verificadas recebem `EMAIL_NOT_VERIFIED`.
+8. Votos de utilidade funcionam; auto-voto é rejeitado. Denúncias podem ser enviadas.
+9. Um jogo 10/10 não supera um 9500/10000 no Top Rated (Wilson `confidenceScore`, mínimo 50 reviews).
+10. Abas de rankings carregam: top rated, trending, lançamentos, populares.
+11. Perfil mostra reputação, analytics de avaliador (quando há reviews suficientes) e as reviews do usuário.
+12. Tema escuro é o padrão; o toggle do header alterna para claro e volta.
+13. Admin (`admin@gamescore.dev`) lista jogos, edita um jogo, remove/restaura review, resolve reports, confirma review bomb, suspende usuário e vê o dashboard.
+14. Moderador (`moderator@gamescore.dev`) modera reviews/reports/bombs, lista e suspende usuários, mas não lista jogos nem importa da IGDB.

@@ -1,101 +1,103 @@
-# Beta deploy (Vercel + Render + Neon)
+# Deploy beta (Vercel + Render + Neon)
 
-Public sampling setup without a custom domain: Next.js on Vercel, ASP.NET API on Render, Postgres on Neon.
+**Idioma:** [Português](./deploy-beta.md) · [English](./en/deploy-beta.md)
 
-## Architecture
+Setup público de amostragem sem domínio customizado obrigatório: Next.js na Vercel, API ASP.NET no Render, Postgres no Neon.
+
+## Arquitetura
 
 ```text
 Browser  →  Vercel (web)     NEXT_PUBLIC_SITE_URL
-         →  Render (API)     CORS_ORIGINS = Vercel origin
-         →  Neon (Postgres)  DATABASE_URL with sslmode=require
+         →  Render (API)     CORS_ORIGINS = origem Vercel
+         →  Neon (Postgres)  DATABASE_URL com sslmode=require
 ```
 
-Refresh cookies are `SameSite=None; Secure` in production so the Vercel origin can call `POST /auth/refresh` on Render with `credentials: 'include'`.
+Cookies de refresh são `SameSite=None; Secure` em produção quando o browser fala direto com outra origem, para a origem Vercel poder chamar `POST /auth/refresh` no Render com `credentials: 'include'`. Com domínio próprio, prefira o proxy same-origin (abaixo).
 
 ## 1. Neon
 
-1. Create a project and copy the connection string.
-2. Prefer the pooled URL if Render opens many connections.
-3. Ensure the URL includes `sslmode=require` (the API also forces SSL for `*.neon.tech` hosts).
-4. Run migrations against Neon from a trusted machine:
+1. Crie um projeto e copie a connection string.
+2. Prefira a URL pooled se o Render abrir muitas conexões.
+3. Garanta `sslmode=require` na URL (a API também força SSL para hosts `*.neon.tech`).
+4. Rode migrations no Neon a partir de uma máquina confiável:
 
 ```bash
 DATABASE_URL='postgresql://...@...neon.tech/neondb?sslmode=require' pnpm db:migrate
 ```
 
-**Never** run `pnpm db:seed` against production/beta.
+**Nunca** rode `pnpm db:seed` contra produção/beta.
 
-## Guided setup
+## Setup guiado
 
-From the repo root (Git Bash / WSL):
+Na raiz do repo (Git Bash / WSL):
 
 ```bash
 bash scripts/setup-beta-wizard.sh
 ```
 
-JWTs are pre-generated in `.env.beta.local` (gitignored). The wizard walks Neon → Resend SMTP → Render → Vercel and writes the remaining values.
+JWTs são pré-gerados em `.env.beta.local` (gitignored). O wizard percorre Neon → Resend SMTP → Render → Vercel e grava o restante.
 
 ## 2. Render (API)
 
-Prefer the repo Blueprint [`render.yaml`](../render.yaml) (New → Blueprint), or create a Web Service (Docker, dockerfile `infrastructure/docker/api.Dockerfile`, context `.`).
+Prefira o Blueprint do repo [`render.yaml`](../render.yaml) (New → Blueprint), ou crie um Web Service (Docker, dockerfile `infrastructure/docker/api.Dockerfile`, context `.`).
 
-| Variable | Value |
+| Variável | Valor |
 |----------|--------|
 | `NODE_ENV` | `production` |
-| `DATABASE_URL` | Neon URL |
+| `DATABASE_URL` | URL do Neon |
 | `JWT_SECRET` | `openssl rand -base64 48` |
-| `JWT_REFRESH_SECRET` | different `openssl rand -base64 48` |
-| `CORS_ORIGINS` | exact Vercel origin, e.g. `https://gamescore-xxx.vercel.app` (no trailing slash) |
-| `NEXT_PUBLIC_SITE_URL` | same Vercel origin (used in email links) |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | required in production |
-| `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | Resend: set `SMTP_HOST=smtp.resend.com` and `SMTP_PASS` = API key (`re_…`). The API uses Resend’s **HTTPS** API automatically (Render free blocks outbound SMTP on 25/465/587). After domain verify, set `SMTP_FROM` to `GameScore <noreply@your-domain>`. |
+| `JWT_REFRESH_SECRET` | outro `openssl rand -base64 48` |
+| `CORS_ORIGINS` | origem Vercel exata, ex. `https://gamescore-xxx.vercel.app` (sem barra no final) |
+| `NEXT_PUBLIC_SITE_URL` | mesma origem Vercel (usada em links de e-mail) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_FROM` | obrigatórios em produção |
+| `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | Resend: `SMTP_HOST=smtp.resend.com` e `SMTP_PASS` = API key (`re_…`). A API usa a API **HTTPS** do Resend automaticamente (o plano free do Render bloqueia SMTP outbound em 25/465/587). Após verificar domínio, use `SMTP_FROM` como `GameScore <noreply@seu-dominio>`. |
 | `ENABLE_SWAGGER` | `false` |
 | `LOG_LEVEL` | `info` |
-| `REDIS_URL` | recommended (Render Redis / Upstash) |
-| `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | optional |
+| `REDIS_URL` | recomendado (Render Redis / Upstash) |
+| `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | opcional |
 
-Health check path: `/health`.
+Health check: `/health`.
 
-Secrets that contain `dev-only-` or `change-me` are rejected at startup.
+Secrets que contenham `dev-only-` ou `change-me` são rejeitados no startup.
 
 ## 3. Vercel (web)
 
-Import the **repo root** (not `apps/web`). [`vercel.json`](../vercel.json) runs the pnpm workspace build for `@gamescore/web`.
+Importe a **raiz do repo** (não `apps/web`). [`vercel.json`](../vercel.json) roda o build do workspace pnpm para `@gamescore/web`.
 
-### Session cookies (required on custom domains)
+### Cookies de sessão (obrigatório com domínio customizado)
 
-Browsers treat `gamesscore.com.br` → `*.onrender.com` as **third-party** cookies, so login works until refresh and then the session vanishes. The web app proxies the browser API through same-origin `/api/*` (Next route handler) and rewrites the refresh cookie to `SameSite=Lax`:
+Browsers tratam `gamesscore.com.br` → `*.onrender.com` como cookies **third-party**, então o login funciona até o refresh e a sessão some. A web faz proxy da API pelo same-origin `/api/*` (route handler do Next) e reescreve o cookie de refresh para `SameSite=Lax`:
 
-| Variable | Value |
+| Variável | Valor |
 |----------|--------|
 | `NEXT_PUBLIC_SITE_URL` | `https://www.gamesscore.com.br` |
-| `NEXT_PUBLIC_API_URL` | prefer `/api`; if it still points at `*.onrender.com`, the build rewrites the browser to `/api` automatically |
-| `API_INTERNAL_URL` | `https://gamescore-project.onrender.com` (SSR + `/api` proxy upstream) |
-| `API_REWRITE_TARGET` | optional; defaults to `API_INTERNAL_URL` or the old onrender public URL |
+| `NEXT_PUBLIC_API_URL` | preferir `/api`; se ainda apontar para `*.onrender.com`, o build redireciona o browser para `/api` automaticamente |
+| `API_INTERNAL_URL` | `https://gamescore-project.onrender.com` (SSR + upstream do proxy `/api`) |
+| `API_REWRITE_TARGET` | opcional; default `API_INTERNAL_URL` ou a URL pública antiga onrender |
 
-On Render, set:
+No Render, defina:
 
-| Variable | Value |
+| Variável | Valor |
 |----------|--------|
 | `CORS_ORIGINS` | `https://www.gamesscore.com.br,https://gamesscore.com.br` |
 | `NEXT_PUBLIC_SITE_URL` | `https://www.gamesscore.com.br` |
-| `COOKIE_SAMESITE` | `Lax` (first-party via `/api` proxy) |
+| `COOKIE_SAMESITE` | `Lax` (first-party via proxy `/api`) |
 
-Rebuild after changing `NEXT_PUBLIC_*` — CSP `connect-src` and the client bundle bake them in at build time.
+Rebuild depois de mudar `NEXT_PUBLIC_*` — CSP `connect-src` e o bundle do client embutem esses valores no build.
 
-Chicken-and-egg: deploy API first (temporary CORS), deploy Vercel, then set `CORS_ORIGINS` + `NEXT_PUBLIC_SITE_URL` on Render and redeploy both.
+Ovo e galinha: deploy da API primeiro (CORS temporário), deploy Vercel, depois ajuste `CORS_ORIGINS` + `NEXT_PUBLIC_SITE_URL` no Render e redeploy dos dois.
 
-Preview deployments: each `*.vercel.app` URL must appear in Render `CORS_ORIGINS`, or pin a stable production/preview hostname.
+Preview deployments: cada URL `*.vercel.app` precisa aparecer em `CORS_ORIGINS` do Render, ou fixe um hostname estável de production/preview.
 
-## 4. Smoke checklist
+## 4. Checklist de smoke
 
-- [ ] Register → verification email arrives → confirm → write a review
-- [ ] Unverified account gets `EMAIL_NOT_VERIFIED` on review/vote
-- [ ] Refresh after reload still works (same-origin `/api` cookie)
-- [ ] Login / forgot-password rate-limit after repeated hits (429)
-- [ ] Swagger not public (`/api/docs`)
-- [ ] Admin list users: moderators see masked emails; admins see full
+- [ ] Registrar → e-mail de verificação chega → confirmar → escrever review
+- [ ] Conta não verificada recebe `EMAIL_NOT_VERIFIED` em review/voto
+- [ ] Refresh após reload ainda funciona (cookie same-origin `/api`)
+- [ ] Login / forgot-password rate-limit após hits repetidos (429)
+- [ ] Swagger não público (`/api/docs`)
+- [ ] Admin lista users: moderadores veem e-mails mascarados; admins veem completo
 
-## 5. Optional Redis
+## 5. Redis opcional
 
-Without Redis the API uses in-memory cache, Hangfire memory storage, and in-memory rate-limit counters. Fine for a single Render instance; add Redis before scaling replicas.
+Sem Redis a API usa cache in-memory, Hangfire memory storage e contadores de rate-limit em memória. Ok para uma única instância no Render; adicione Redis antes de escalar réplicas.

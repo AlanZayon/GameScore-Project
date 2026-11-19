@@ -1,90 +1,92 @@
-# Feature Design — Evidence Redesign
+# Feature Design — Redesign Evidence
 
-## Objective
+**Idioma:** [Português](./redesign-design.md) · [English](../en/design/redesign-design.md)
 
-Replace AI-slop purple/dark generics with an Evidence UI: compact, teal accent, slab+sans, `%`-first score presentation, data-first home, parity across mobile and desktop. Full product including admin.
+## Objetivo
 
-## User
+Substituir o visual genérico “AI-slop” roxo/escuro por uma UI Evidence: compacta, acento teal, slab+sans, apresentação da nota com `%` primeiro, home data-first, paridade mobile e desktop. Produto completo incluindo admin.
 
-Players discovering and rating games; moderators/admins managing content.
+## Usuário
 
-## Primary Action
+Jogadores descobrindo e avaliando jogos; moderadores/admins gerindo conteúdo.
 
-Find a game → read score with evidence → recommend / not recommend.
+## Ação primária
 
-## Secondary Actions
+Encontrar um jogo → ler a nota com evidência → recomendar / não recomendar.
 
-Browse rankings, search, manage profile/settings, moderate (admin).
+## Ações secundárias
 
-## Information Architecture
+Navegar rankings, buscar, gerir perfil/settings, moderar (admin).
+
+## Arquitetura de informação
 
 ### Home (data-first)
 
-1. One-line product proposition + optional muted totals
-2. Search (or clear path to header search)
-3. Dense sections: popular, top rated, new, trending (rows on mobile; compact cards on desktop)
-4. Recent reviews (compact)
+1. Proposição do produto em uma linha + totais opcionais em muted
+2. Busca (ou caminho claro para a busca do header)
+3. Seções densas: populares, top rated, novos, trending (rows no mobile; cards compactos no desktop)
+4. Reviews recentes (compactas)
 
-### Game detail
+### Detalhe do jogo
 
-1. Cover + title + meta
-2. ScorePanel (`%` hero; n + confidence secondary)
-3. Media, platforms, reviews, form
+1. Capa + título + meta
+2. ScorePanel (`%` hero; n + confiança secundários)
+3. Mídia, plataformas, reviews, formulário
 
-### Catalog / Rankings / Search
+### Catálogo / Rankings / Busca
 
-Filter controls + dense list/grid of games with tabular `%`.
+Controles de filtro + lista/grid densa de jogos com `%` tabular.
 
 ### Scoring
 
-Editorial explainer; display type for title; dense readable body.
+Explicador editorial; display type no título; corpo denso e legível.
 
 ### Auth / Settings / Legal
 
-Compact forms; same tokens; no decorative marketing chrome.
+Formulários compactos; mesmos tokens; sem chrome de marketing decorativo.
 
 ### Admin
 
-Dense tables, filter chips, dialogs; shared tokens; no stacked decorative cards.
+Tabelas densas, filter chips, dialogs; tokens compartilhados; sem cards decorativos empilhados.
 
-## Visual Direction
+## Direção visual
 
-Evidence / data-forward · dark-first · teal · Zilla Slab + IBM Plex Sans · compact / utilitarian · functional motion.
+Evidence / data-forward · dark-first · teal · Zilla Slab + IBM Plex Sans · compacto / utilitário · motion funcional.
 
 ## Layout
 
-- `container-page` max ~80rem; tighter vertical rhythm (`py-6`–`py-8`)
-- Mobile: single column, GameRow lists, score under title
-- Desktop: multi-column detail; score sticky right; denser grids
+- `container-page` max ~80rem; ritmo vertical mais cerrado (`py-6`–`py-8`)
+- Mobile: coluna única, listas GameRow, nota sob o título
+- Desktop: detalhe multi-coluna; nota sticky à direita; grids mais densos
 
-## Components
+## Componentes
 
-ScorePanel, GameCard, GameRow, ScoreBadge, SiteHeader (slab wordmark), SiteFooter, Tabs, admin panels.
+ScorePanel, GameCard, GameRow, ScoreBadge, SiteHeader (wordmark slab), SiteFooter, Tabs, painéis admin.
 
-## Responsive Behavior
+## Comportamento responsivo
 
-Parity: intentional layout changes at `md`/`lg` (list ↔ grid, header search visibility, detail columns), not only shrink.
+Paridade: mudanças intencionais de layout em `md`/`lg` (lista ↔ grid, busca no header, colunas do detalhe), não só encolher.
 
-## Interaction
+## Interação
 
-Hover: border / surface-hover. Tabs: brand fill. Menus: raised surface. Score bar: width reflects positive %.
+Hover: borda / surface-hover. Tabs: fill brand. Menus: surface raised. Barra de score: largura reflete % positivo.
 
-## States
+## Estados
 
-Loading skeletons, empty dashed borders, error soft negative panel, disabled opacity — keep patterns, restyle to tokens.
+Skeletons de loading, empty com borda tracejada, erro em painel soft negative, disabled com opacity — manter padrões, restylar para tokens.
 
-## Accessibility
+## Acessibilidade
 
-Focus teal; keyboard nav unchanged; reduced motion preserved; score `%` readable without color alone (label text).
+Focus teal; navegação por teclado inalterada; reduced motion preservado; `%` da nota legível sem depender só da cor (texto do label).
 
-## Technical Constraints
+## Restrições técnicas
 
-Next.js App Router, Tailwind 4, next-intl, existing DTOs. No new UI library. No API changes.
+Next.js App Router, Tailwind 4, next-intl, DTOs existentes. Sem nova UI library. Sem mudanças de API.
 
-## Implementation Notes
+## Notas de implementação
 
-Tokens in `globals.css`; fonts in root `layout.tsx`; redesign confined to `apps/web`.
+Tokens em `globals.css`; fontes no `layout.tsx` raiz; redesign confinado a `apps/web`.
 
-## Open Questions
+## Questões em aberto
 
-None — decisions locked in plan.
+Nenhuma — decisões fechadas no plano.

@@ -1,32 +1,33 @@
 # API
 
-Base URL in development: `http://localhost:3001`
+**Idioma:** [Português](./api.md) · [English](./en/api.md)
+
+URL base em desenvolvimento: `http://localhost:3001`
 
 OpenAPI / Swagger UI: `http://localhost:3001/api/docs`
 
-Every error is `{ code, message }` plus an optional `details` map and `requestId`. Clients switch on `code` and localise it themselves.
+Todo erro é `{ code, message }` mais um mapa opcional `details` e `requestId`. Clientes fazem switch em `code` e localizam a mensagem por conta própria.
 
 ## Auth
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| POST | `/auth/register` | Sets httpOnly refresh cookie |
-| POST | `/auth/login` | Email or username |
-| POST | `/auth/refresh` | Rotates the refresh cookie |
-| POST | `/auth/logout` | Revokes the current refresh token |
+| Método | Path | Notas |
+| ------ | ---- | ----- |
+| POST | `/auth/register` | Define cookie httpOnly de refresh |
+| POST | `/auth/login` | E-mail ou username |
+| POST | `/auth/refresh` | Rotaciona o cookie de refresh |
+| POST | `/auth/logout` | Revoga o refresh atual |
 | GET | `/auth/me` | Bearer access token |
-| POST | `/auth/password` | Change password while signed in |
-| POST | `/auth/forgot-password` | Always 204; never reveals whether the email exists |
-| POST | `/auth/reset-password` | Consumes a one-hour token |
-| POST | `/auth/verify-email` | Consumes a 24-hour confirmation token |
-| POST | `/auth/resend-verification` | Always 204; never reveals whether the email exists |
+| POST | `/auth/password` | Troca de senha autenticado |
+| POST | `/auth/forgot-password` | Sempre 204; nunca revela se o e-mail existe |
+| POST | `/auth/reset-password` | Consome token de uma hora |
+| POST | `/auth/verify-email` | Consome token de confirmação de 24 horas |
+| POST | `/auth/resend-verification` | Sempre 204; nunca revela se o e-mail existe |
 
-Replaying a rotated refresh token revokes **every** session for that account.
+Reusar um refresh já rotacionado revoga **todas** as sessões da conta.
 
-## Catalogue
+## Catálogo
 
 `GET /games`, `GET /games/:slug`, `GET /games/:slug/statistics`, `GET /platforms`, `GET /genres`, `GET /search`, `GET /search/autocomplete`, `GET /search/external/:externalId`, `POST /games/external/:externalId/reviews`, `POST /search/import`
-
 
 ## Reviews
 
@@ -36,20 +37,20 @@ Replaying a rotated refresh token revokes **every** session for that account.
 
 `GET /home`, `GET /rankings/top-rated`, `GET /rankings/trending`, `GET /rankings/new-releases`, `GET /rankings/popular`
 
-Top rated orders by `confidenceScore` and requires `RANKING_MINIMUM_REVIEWS`.
+Top rated ordena por `confidenceScore` e exige `RANKING_MINIMUM_REVIEWS`.
 
 ## Users
 
 `GET /users/:username`, `GET /users/:username/reviews`, `GET /users/:username/statistics?range=3m|12m|all`, `GET /users/:username/reputation-events`, `PATCH /users/me`, `GET /users/me/export`, `DELETE /users/me`
 
-`GET /users/:username/statistics` returns cached profile analytics (recommendation breakdown, genre/platform buckets, timeline, hours, reputation summary, top useful reviews). Analytics charts are marked unavailable when the player has fewer than 3 published reviews.
+`GET /users/:username/statistics` devolve analytics de perfil em cache (breakdown de recomendações, buckets de gênero/plataforma, timeline, horas, resumo de reputação, reviews mais úteis). Gráficos ficam indisponíveis com menos de 3 reviews publicadas.
 
-`GET /users/:username/reputation-events` is a cursor-paginated ledger. Sensitive moderation reasons are omitted for anonymous/player viewers and included for moderators/admins.
+`GET /users/:username/reputation-events` é um ledger paginado por cursor. Motivos sensíveis de moderação são omitidos para anônimos/players e incluídos para moderadores/admins.
 
 ## Admin
 
-Moderators can moderate reviews, reports and review-bomb events. Admins can also edit games, import from IGDB, and change roles. Every action writes an `AuditLog` row.
+Moderadores podem moderar reviews, reports e eventos de review bomb. Admins também editam jogos, importam da IGDB e alteram papéis. Toda ação grava uma linha em `AuditLog`.
 
 ## Health
 
-`GET /health` returns `{ status, checks.database, features }`.
+`GET /health` retorna `{ status, checks.database, features }`.
